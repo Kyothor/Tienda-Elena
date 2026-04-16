@@ -9,13 +9,13 @@
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh;}
   .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
   .login-card{background:#fff;border-radius:16px;border:1px solid #e8e8e2;padding:2rem;width:100%;max-width:360px;box-shadow:0 2px 20px rgba(0,0,0,0.06);}
-  .login-logo{font-size:24px;font-weight:700;color:#1a1a1a;margin-bottom:4px;letter-spacing:-0.5px;}
+  .login-logo{font-size:24px;font-weight:700;color:#1a1a1a;margin-bottom:4px;}
   .login-sub{font-size:13px;color:#888;margin-bottom:1.5rem;}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12px;color:#666;margin-bottom:5px;font-weight:500;}
   .field input{width:100%;padding:10px 12px;font-size:14px;border:1px solid #e0e0da;border-radius:10px;background:#fafaf8;color:#1a1a1a;outline:none;transition:border-color .2s;}
   .field input:focus{border-color:#1D9E75;}
-  .btn-primary{width:100%;padding:11px;background:#1D9E75;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px;transition:background .2s;}
+  .btn-primary{width:100%;padding:11px;background:#1D9E75;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px;}
   .btn-primary:hover{background:#0F6E56;}
   .btn-primary:disabled{background:#aaa;cursor:not-allowed;}
   .error-msg{font-size:12px;color:#c0392b;margin-top:8px;}
@@ -26,7 +26,7 @@
   .btn-logout:hover{background:#f5f5f0;}
   .content{padding:20px;max-width:720px;margin:0 auto;}
   .tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid #e8e8e2;}
-  .tab{padding:9px 16px;font-size:13px;cursor:pointer;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;border-top:none;border-left:none;border-right:none;font-weight:500;transition:all .15s;}
+  .tab{padding:9px 16px;font-size:13px;cursor:pointer;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;border-top:none;border-left:none;border-right:none;font-weight:500;}
   .tab.active{color:#1D9E75;border-bottom-color:#1D9E75;}
   .tab-content{display:none;}
   .tab-content.active{display:block;}
@@ -45,14 +45,13 @@
   .badge-red{background:#FDEAEA;color:#a32d2d;}
   .form-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
   .form-row .field{flex:1;margin-bottom:0;min-width:110px;}
-  .btn-add{padding:10px 16px;font-size:13px;border:none;border-radius:10px;background:#1D9E75;color:#fff;cursor:pointer;font-weight:600;white-space:nowrap;transition:background .2s;}
+  .btn-add{padding:10px 16px;font-size:13px;border:none;border-radius:10px;background:#1D9E75;color:#fff;cursor:pointer;font-weight:600;white-space:nowrap;}
   .btn-add:hover{background:#0F6E56;}
   .btn-add:disabled{background:#aaa;cursor:not-allowed;}
   .btn-danger{padding:5px 10px;font-size:12px;border:1px solid #f0c0c0;border-radius:8px;background:#fff;color:#c0392b;cursor:pointer;}
   .btn-danger:hover{background:#fdeaea;}
   .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
-  .product-card{background:#fff;border:1px solid #e8e8e2;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:5px;transition:border-color .2s;}
-  .product-card:hover{border-color:#1D9E75;}
+  .product-card{background:#fff;border:1px solid #e8e8e2;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:5px;}
   .product-name{font-size:13px;font-weight:600;}
   .product-price{font-size:14px;color:#1D9E75;font-weight:700;}
   .product-cat{font-size:11px;color:#aaa;font-weight:500;}
@@ -112,9 +111,9 @@
   <div class="content">
     <div class="metrics" id="admin-metrics"></div>
     <div class="tabs">
-      <button class="tab active" id="tbtn-clientes" onclick="showAdminTab('clientes')">Clientes</button>
-      <button class="tab" id="tbtn-compras"  onclick="showAdminTab('compras')">Compras del mes</button>
-      <button class="tab" id="tbtn-productos" onclick="showAdminTab('productos')">Productos</button>
+      <button class="tab active" id="tbtn-clientes"  onclick="showAdminTab('clientes')">Clientes</button>
+      <button class="tab"        id="tbtn-compras"   onclick="showAdminTab('compras')">Compras del mes</button>
+      <button class="tab"        id="tbtn-productos" onclick="showAdminTab('productos')">Productos</button>
     </div>
     <div id="tab-clientes" class="tab-content active">
       <div class="card" style="margin-bottom:14px;">
@@ -187,17 +186,12 @@
   </div>
 </div>
 
-<script type="module">
-import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {
-  getAuth, signInWithEmailAndPassword,
-  createUserWithEmailAndPassword, signOut, onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import {
-  getFirestore, collection, doc, getDocs, setDoc,
-  deleteDoc, query, where, addDoc, onSnapshot
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+<!-- Firebase cargado como scripts clásicos (no module) para que las funciones sean globales -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
+<script>
 const CFG = {
   apiKey:            "AIzaSyBLaUqijK3HC2Pn3CmT6xDi96MZnp0HrJs",
   authDomain:        "tienda-elena.firebaseapp.com",
@@ -210,14 +204,14 @@ const CFG = {
 const ADMIN_EMAIL   = "alezzespinoza14@gmail.com";
 const CLIENT_DOMAIN = "@tienda-elena.com";
 
-// App principal — sesión del usuario activo
-const mainApp  = initializeApp(CFG, "main");
-const mainAuth = getAuth(mainApp);
-const db       = getFirestore(mainApp);
+// App principal
+const mainApp  = firebase.initializeApp(CFG, "main");
+const mainAuth = mainApp.auth();
+const db       = mainApp.firestore();
 
-// App secundaria — solo para crear usuarios sin tocar la sesión principal
-const secApp   = initializeApp(CFG, "secondary");
-const secAuth  = getAuth(secApp);
+// App secundaria — para crear clientes sin cerrar sesión admin
+const secApp   = firebase.initializeApp(CFG, "secondary");
+const secAuth  = secApp.auth();
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto',
                 'Septiembre','Octubre','Noviembre','Diciembre'];
@@ -236,18 +230,17 @@ let unsubPurchases  = null;
 const fmt      = n    => '$' + Math.round(n).toLocaleString('es-CO');
 const initials = name => name.trim().split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
 const uid      = ()   => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
-const show     = id   => { const el = document.getElementById(id); if(el) el.style.display='block'; };
-const hide     = id   => { const el = document.getElementById(id); if(el) el.style.display='none'; };
 const toEmail  = u    => u.includes('@') ? u : u.toLowerCase().trim() + CLIENT_DOMAIN;
 
-function showScreen(screen) {
-  ['loading-screen','screen-login','screen-admin','screen-cliente'].forEach(hide);
-  show(screen);
+function showScreen(id) {
+  ['loading-screen','screen-login','screen-admin','screen-cliente'].forEach(s => {
+    document.getElementById(s).style.display = 'none';
+  });
+  document.getElementById(id).style.display = 'block';
 }
 
-// ── SEED productos iniciales ─────────────────────────────────
 async function seedProducts() {
-  const snap = await getDocs(collection(db,'products'));
+  const snap = await db.collection('products').get();
   if (!snap.empty) return;
   const defaults = [
     {id:'p1',name:'Leche entera',   price:3200,cat:'Lácteos'},
@@ -257,13 +250,13 @@ async function seedProducts() {
     {id:'p5',name:'Azúcar 1kg',     price:3500,cat:'Granos'},
     {id:'p6',name:'Jabón de baño',  price:2800,cat:'Aseo'},
   ];
-  for (const p of defaults) await setDoc(doc(db,'products',p.id), p);
+  for (const p of defaults) await db.collection('products').doc(p.id).set(p);
 }
 
 async function loadAll() {
   const [uSnap, pSnap] = await Promise.all([
-    getDocs(collection(db,'users')),
-    getDocs(collection(db,'products'))
+    db.collection('users').get(),
+    db.collection('products').get()
   ]);
   cachedUsers    = uSnap.docs.map(d => d.data());
   cachedProducts = pSnap.docs.map(d => d.data());
@@ -271,32 +264,31 @@ async function loadAll() {
 
 function subscribePurchases(cb) {
   if (unsubPurchases) { unsubPurchases(); unsubPurchases = null; }
-  const q = query(collection(db,'purchases'), where('monthKey','==',monthKey));
-  unsubPurchases = onSnapshot(q, snap => {
-    cachedPurchases = snap.docs.map(d => ({id:d.id,...d.data()}));
-    cb();
-  });
+  unsubPurchases = db.collection('purchases')
+    .where('monthKey','==',monthKey)
+    .onSnapshot(snap => {
+      cachedPurchases = snap.docs.map(d => ({id:d.id, ...d.data()}));
+      cb();
+    });
 }
 
-// ── AUTH ─────────────────────────────────────────────────────
-onAuthStateChanged(mainAuth, async fbUser => {
+mainAuth.onAuthStateChanged(async fbUser => {
   if (!fbUser) {
     currentUser = null;
     if (unsubPurchases) { unsubPurchases(); unsubPurchases = null; }
     showScreen('screen-login');
-    document.getElementById('btn-login').disabled = false;
-    document.getElementById('btn-login').textContent = 'Ingresar';
+    const btn = document.getElementById('btn-login');
+    btn.disabled = false; btn.textContent = 'Ingresar';
     return;
   }
 
-  // Recargar usuarios por si acaba de crearse uno nuevo
   await loadAll();
 
   if (fbUser.email === ADMIN_EMAIL) {
     currentUser = {id:'admin', name:'Administrador', username:'admin', role:'admin'};
   } else {
     const profile = cachedUsers.find(u => toEmail(u.username) === fbUser.email);
-    if (!profile) { await signOut(mainAuth); return; }
+    if (!profile) { await mainAuth.signOut(); return; }
     currentUser = profile;
   }
 
@@ -315,34 +307,33 @@ onAuthStateChanged(mainAuth, async fbUser => {
   }
 });
 
-async function doLogin() {
+function doLogin() {
   const username = document.getElementById('login-user').value.trim();
   const password = document.getElementById('login-pass').value;
   const btn = document.getElementById('btn-login');
   const err = document.getElementById('login-error');
   if (!username || !password) { err.textContent = 'Completa usuario y contraseña'; return; }
   btn.disabled = true; btn.textContent = 'Ingresando...'; err.textContent = '';
-  try {
-    await signInWithEmailAndPassword(mainAuth, toEmail(username), password);
-  } catch(e) {
-    err.textContent = 'Usuario o contraseña incorrectos';
-    btn.disabled = false; btn.textContent = 'Ingresar';
-  }
+  mainAuth.signInWithEmailAndPassword(toEmail(username), password)
+    .catch(() => {
+      err.textContent = 'Usuario o contraseña incorrectos';
+      btn.disabled = false; btn.textContent = 'Ingresar';
+    });
 }
 
-async function doLogout() {
+function doLogout() {
   if (unsubPurchases) { unsubPurchases(); unsubPurchases = null; }
   currentUser = null;
-  await signOut(mainAuth);
+  mainAuth.signOut();
 }
 
-// ── TABS ─────────────────────────────────────────────────────
 function showAdminTab(tab) {
   ['clientes','compras','productos'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
     document.getElementById('tbtn-'+t).classList.toggle('active', t===tab);
   });
 }
+
 function showClientTab(tab) {
   ['catalogo','miscuentas'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
@@ -351,14 +342,12 @@ function showClientTab(tab) {
   if (tab === 'miscuentas') renderClientPurchases();
 }
 
-// ── HELPERS ──────────────────────────────────────────────────
 const getMonthPurchases = () => cachedPurchases.filter(p => p.monthKey === monthKey);
 const getProduct        = id => cachedProducts.find(p => p.id === id);
-const clientDebt = uid =>
-  getMonthPurchases().filter(p => p.userId === uid)
+const clientDebt = userId =>
+  getMonthPurchases().filter(p => p.userId === userId)
     .reduce((s,p) => { const pr = getProduct(p.productId); return s + (pr ? pr.price*p.qty : 0); }, 0);
 
-// ── RENDER ADMIN ─────────────────────────────────────────────
 function renderAdmin() {
   document.getElementById('admin-month-label').textContent = MONTHS[currentMonth]+' '+currentYear;
   const clients   = cachedUsers.filter(u => u.role === 'cliente');
@@ -370,7 +359,6 @@ function renderAdmin() {
      <div class="metric"><div class="metric-label">Compras del mes</div><div class="metric-val">${mp.length}</div></div>
      <div class="metric"><div class="metric-label">Total deuda mes</div><div class="metric-val" style="font-size:17px;">${fmt(totalDebt)}</div></div>`;
 
-  // Tabla clientes
   const cl = document.getElementById('admin-clients-list');
   cl.innerHTML = clients.length === 0
     ? '<div class="empty">Sin clientes aún. Agrega el primero abajo.</div>'
@@ -383,11 +371,10 @@ function renderAdmin() {
             <td style="color:#aaa;">${c.username}</td>
             <td>${mp.filter(p=>p.userId===c.id).length}</td>
             <td><span class="badge ${badge}">${fmt(debt)}</span></td>
-            <td><button class="btn-danger" onclick="_deleteClient('${c.id}')">Eliminar</button></td>
+            <td><button class="btn-danger" onclick="deleteClient('${c.id}')">Eliminar</button></td>
           </tr>`;
         }).join('') + '</table>';
 
-  // Compras por cliente
   const pl = document.getElementById('admin-purchases-list');
   pl.innerHTML = clients.length === 0
     ? '<div class="empty">Sin clientes registrados</div>'
@@ -406,18 +393,14 @@ function renderAdmin() {
                 <tr><th>Producto</th><th>Cant.</th><th>Subtotal</th><th>Fecha</th><th></th></tr>`
               + cmp.map(p => {
                   const pr = getProduct(p.productId);
-                  return `<tr>
-                    <td>${pr?pr.name:'–'}</td><td>${p.qty}</td>
-                    <td>${pr?fmt(pr.price*p.qty):'–'}</td>
-                    <td style="color:#aaa;">${p.date}</td>
-                    <td><button class="btn-danger" onclick="_adminDelPurchase('${p.id}')">×</button></td>
-                  </tr>`;
+                  return `<tr><td>${pr?pr.name:'–'}</td><td>${p.qty}</td>
+                    <td>${pr?fmt(pr.price*p.qty):'–'}</td><td style="color:#aaa;">${p.date}</td>
+                    <td><button class="btn-danger" onclick="adminDelPurchase('${p.id}')">×</button></td></tr>`;
                 }).join('') + '</table>'
           }
         </div>`;
       }).join('');
 
-  // Productos
   const pt = document.getElementById('admin-products-list');
   pt.innerHTML = cachedProducts.length===0
     ? '<div class="empty">Sin productos. Agrega el primero abajo.</div>'
@@ -426,14 +409,13 @@ function renderAdmin() {
           <td style="font-weight:600;">${p.name}</td>
           <td style="color:#aaa;">${p.cat}</td>
           <td style="color:#1D9E75;font-weight:700;">${fmt(p.price)}</td>
-          <td><button class="btn-danger" onclick="_deleteProduct('${p.id}')">Eliminar</button></td>
+          <td><button class="btn-danger" onclick="deleteProduct('${p.id}')">Eliminar</button></td>
         </tr>`).join('') + '</table>';
 }
 
-// ── RENDER CLIENTE ───────────────────────────────────────────
 function renderCliente() {
   document.getElementById('client-welcome').textContent =
-    'Hola, ' + currentUser.name + ' · ' + MONTHS[currentMonth]+' '+currentYear;
+    'Hola, '+currentUser.name+' · '+MONTHS[currentMonth]+' '+currentYear;
   document.getElementById('client-month-badge').textContent = MONTHS[currentMonth]+' '+currentYear;
 
   const grid = document.getElementById('client-product-grid');
@@ -446,10 +428,9 @@ function renderCliente() {
           <div class="product-price">${fmt(p.price)}</div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
             <input type="number" id="qty-${p.id}" value="1" min="1"
-              style="width:52px;padding:6px 8px;font-size:13px;border:1px solid #e0e0da;
-                     border-radius:8px;background:#fafaf8;color:#1a1a1a;outline:none;"/>
+              style="width:52px;padding:6px 8px;font-size:13px;border:1px solid #e0e0da;border-radius:8px;background:#fafaf8;color:#1a1a1a;outline:none;"/>
             <button class="btn-add" style="flex:1;padding:7px 10px;font-size:12px;"
-              onclick="_addPurchase('${p.id}')">Agregar</button>
+              onclick="addPurchase('${p.id}')">Agregar</button>
           </div>
         </div>`).join('');
   renderClientPurchases();
@@ -471,7 +452,7 @@ function renderClientPurchases() {
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-size:14px;font-weight:700;color:#1D9E75;">${pr?fmt(pr.price*p.qty):'–'}</span>
-            <button class="btn-danger" onclick="_deleteMyPurchase('${p.id}')">×</button>
+            <button class="btn-danger" onclick="deleteMyPurchase('${p.id}')">×</button>
           </div>
         </div>`;
       }).join('');
@@ -480,67 +461,81 @@ function renderClientPurchases() {
      <span class="total-val">${fmt(total)}</span>`;
 }
 
-// ── ACCIONES ─────────────────────────────────────────────────
-async function addPurchase(productId) {
+// ── ACCIONES GLOBALES ────────────────────────────────────────
+
+function addPurchase(productId) {
   const qty = parseInt(document.getElementById('qty-'+productId)?.value)||1;
-  await addDoc(collection(db,'purchases'),{userId:currentUser.id,productId,qty,date:todayStr,monthKey});
-  const pr = getProduct(productId);
-  const al = document.getElementById('client-alert');
-  al.innerHTML = `<div class="alert alert-success">✓ ${pr.name} ×${qty} agregado a tu cuenta</div>`;
-  setTimeout(()=>al.innerHTML='',2500);
+  db.collection('purchases').add({userId:currentUser.id, productId, qty, date:todayStr, monthKey})
+    .then(() => {
+      const pr = getProduct(productId);
+      const al = document.getElementById('client-alert');
+      al.innerHTML = `<div class="alert alert-success">✓ ${pr.name} ×${qty} agregado a tu cuenta</div>`;
+      setTimeout(()=>al.innerHTML='',2500);
+    });
 }
 
-const deleteMyPurchase    = id => deleteDoc(doc(db,'purchases',id));
-const adminDelPurchase    = id => deleteDoc(doc(db,'purchases',id));
+function deleteMyPurchase(id) {
+  db.collection('purchases').doc(id).delete();
+}
 
-async function addClient() {
+function adminDelPurchase(id) {
+  db.collection('purchases').doc(id).delete();
+}
+
+function addClient() {
   const name     = document.getElementById('nc-name').value.trim();
   const username = document.getElementById('nc-user').value.trim().toLowerCase();
   const password = document.getElementById('nc-pass').value;
-  const msg = document.getElementById('add-client-msg');
-  const btn = document.getElementById('btn-add-client');
+  const msg      = document.getElementById('add-client-msg');
+  const btn      = document.getElementById('btn-add-client');
 
   msg.style.color = '#c0392b';
-  if (!name||!username||!password)       { msg.textContent='Completa todos los campos'; return; }
+  if (!name||!username||!password)               { msg.textContent='Completa todos los campos'; return; }
   if (cachedUsers.find(u=>u.username===username)) { msg.textContent='Ese usuario ya existe'; return; }
-  if (password.length < 6)               { msg.textContent='La contraseña debe tener mínimo 6 caracteres'; return; }
+  if (password.length < 6)                        { msg.textContent='La contraseña debe tener mínimo 6 caracteres'; return; }
 
   btn.disabled=true; btn.textContent='Creando...'; msg.textContent='';
 
-  try {
-    // Usar app secundaria → no afecta la sesión del admin
-    const cred    = await createUserWithEmailAndPassword(secAuth, username+CLIENT_DOMAIN, password);
-    const newUser = {id:cred.user.uid, name, username, role:'cliente', email:username+CLIENT_DOMAIN};
-    await setDoc(doc(db,'users',cred.user.uid), newUser);
-    await signOut(secAuth); // cerrar sesión de la app secundaria
+  const email = username + CLIENT_DOMAIN;
 
-    cachedUsers.push(newUser);
-    document.getElementById('nc-name').value='';
-    document.getElementById('nc-user').value='';
-    document.getElementById('nc-pass').value='';
-    msg.style.color = '#2d6a11';
-    msg.textContent = `✓ Cliente "${name}" creado correctamente`;
-    setTimeout(()=>msg.textContent='',3000);
-    renderAdmin();
-  } catch(e) {
-    if (e.code==='auth/email-already-in-use') msg.textContent='Ese usuario ya existe en el sistema';
-    else { msg.textContent='Error al crear cliente. Intenta de nuevo.'; console.error(e); }
-    btn.disabled=false; btn.textContent='+ Agregar';
-    return;
-  }
-  btn.disabled=false; btn.textContent='+ Agregar';
+  secAuth.createUserWithEmailAndPassword(email, password)
+    .then(cred => {
+      const newUser = {id:cred.user.uid, name, username, role:'cliente', email};
+      return db.collection('users').doc(cred.user.uid).set(newUser)
+        .then(() => secAuth.signOut())
+        .then(() => {
+          cachedUsers.push(newUser);
+          document.getElementById('nc-name').value='';
+          document.getElementById('nc-user').value='';
+          document.getElementById('nc-pass').value='';
+          msg.style.color = '#2d6a11';
+          msg.textContent = '✓ Cliente "'+name+'" creado correctamente';
+          setTimeout(()=>msg.textContent='',3000);
+          renderAdmin();
+        });
+    })
+    .catch(e => {
+      if (e.code==='auth/email-already-in-use') msg.textContent='Ese usuario ya existe en el sistema';
+      else { msg.textContent='Error: '+e.message; }
+    })
+    .finally(() => {
+      btn.disabled=false; btn.textContent='+ Agregar';
+    });
 }
 
-async function deleteClient(id) {
+function deleteClient(id) {
   if (!confirm('¿Eliminar este cliente y todas sus compras del mes?')) return;
   const toDel = cachedPurchases.filter(p=>p.userId===id);
-  for (const p of toDel) await deleteDoc(doc(db,'purchases',p.id));
-  await deleteDoc(doc(db,'users',id));
-  cachedUsers = cachedUsers.filter(u=>u.id!==id);
-  renderAdmin();
+  const batch = db.batch();
+  toDel.forEach(p => batch.delete(db.collection('purchases').doc(p.id)));
+  batch.delete(db.collection('users').doc(id));
+  batch.commit().then(() => {
+    cachedUsers = cachedUsers.filter(u=>u.id!==id);
+    renderAdmin();
+  });
 }
 
-async function addProduct() {
+function addProduct() {
   const name  = document.getElementById('np-name').value.trim();
   const price = parseFloat(document.getElementById('np-price').value);
   const cat   = document.getElementById('np-cat').value.trim();
@@ -549,33 +544,29 @@ async function addProduct() {
   if (!name||!price||!cat) { err.textContent='Completa todos los campos'; return; }
   btn.disabled=true; btn.textContent='Guardando...';
   const id = uid();
-  await setDoc(doc(db,'products',id),{id,name,price,cat});
-  cachedProducts.push({id,name,price,cat});
-  err.textContent='';
-  document.getElementById('np-name').value='';
-  document.getElementById('np-price').value='';
-  document.getElementById('np-cat').value='';
-  btn.disabled=false; btn.textContent='+ Agregar';
-  renderAdmin();
+  db.collection('products').doc(id).set({id,name,price,cat})
+    .then(() => {
+      cachedProducts.push({id,name,price,cat});
+      err.textContent='';
+      document.getElementById('np-name').value='';
+      document.getElementById('np-price').value='';
+      document.getElementById('np-cat').value='';
+      renderAdmin();
+    })
+    .finally(() => { btn.disabled=false; btn.textContent='+ Agregar'; });
 }
 
-async function deleteProduct(id) {
+function deleteProduct(id) {
   if (!confirm('¿Eliminar este producto?')) return;
-  await deleteDoc(doc(db,'products',id));
-  cachedProducts = cachedProducts.filter(p=>p.id!==id);
-  renderAdmin();
+  db.collection('products').doc(id).delete().then(() => {
+    cachedProducts = cachedProducts.filter(p=>p.id!==id);
+    renderAdmin();
+  });
 }
 
-// Exponer a onclick
-window._addPurchase      = addPurchase;
-window._deleteMyPurchase = deleteMyPurchase;
-window._adminDelPurchase = adminDelPurchase;
-window._deleteClient     = deleteClient;
-window._deleteProduct    = deleteProduct;
-window.doLogin           = doLogin;
-window.doLogout          = doLogout;
-window.showAdminTab      = showAdminTab;
-window.showClientTab     = showClientTab;
+document.addEventListener('keydown', e => {
+  if (e.key==='Enter' && document.getElementById('screen-login').style.display!=='none') doLogin();
+});
 
 // ── INICIO ───────────────────────────────────────────────────
 (async () => {
@@ -583,15 +574,10 @@ window.showClientTab     = showClientTab;
     await seedProducts();
     await loadAll();
   } catch(e) {
-    console.error('Error de conexión con Firebase:', e);
+    console.error('Error de conexión:', e);
   }
-  // Si hay sesión activa onAuthStateChanged la detecta; si no, mostrar login
   if (!mainAuth.currentUser) showScreen('screen-login');
 })();
-
-document.addEventListener('keydown', e => {
-  if (e.key==='Enter' && document.getElementById('screen-login').style.display!=='none') doLogin();
-});
 </script>
 </body>
 </html>
