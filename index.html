@@ -51,7 +51,10 @@
   .btn-danger{padding:5px 10px;font-size:12px;border:1px solid #f0c0c0;border-radius:8px;background:#fff;color:#c0392b;cursor:pointer;}
   .btn-danger:hover{background:#fdeaea;}
   .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
-  .product-card{background:#fff;border:1px solid #e8e8e2;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:5px;}
+  .product-card{background:#fff;border:1px solid #e8e8e2;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;}
+  .product-img{width:100%;height:120px;object-fit:cover;background:#f5f5f0;}
+  .product-img-placeholder{width:100%;height:120px;background:#f0f0ea;display:flex;align-items:center;justify-content:center;font-size:28px;}
+  .product-info{padding:12px;display:flex;flex-direction:column;gap:4px;}
   .product-name{font-size:13px;font-weight:600;}
   .product-price{font-size:14px;color:#1D9E75;font-weight:700;}
   .product-cat{font-size:11px;color:#aaa;font-weight:500;}
@@ -148,6 +151,9 @@
           <div class="field"><label>Nombre</label><input id="np-name" type="text" placeholder="Ej: Leche entera"/></div>
           <div class="field"><label>Precio ($)</label><input id="np-price" type="number" placeholder="0" min="0"/></div>
           <div class="field"><label>Categoría</label><input id="np-cat" type="text" placeholder="Ej: Lácteos"/></div>
+        </div>
+        <div class="form-row" style="margin-top:10px;">
+          <div class="field" style="flex:3;"><label>URL de imagen (opcional)</label><input id="np-img" type="url" placeholder="https://ejemplo.com/imagen.jpg"/></div>
           <button class="btn-add" id="btn-add-prod" onclick="addProduct()">+ Agregar</button>
         </div>
         <div id="add-prod-error" class="error-msg"></div>
@@ -404,8 +410,9 @@ function renderAdmin() {
   const pt = document.getElementById('admin-products-list');
   pt.innerHTML = cachedProducts.length===0
     ? '<div class="empty">Sin productos. Agrega el primero abajo.</div>'
-    : `<table><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th></th></tr>`
+    : `<table><tr><th>Imagen</th><th>Producto</th><th>Categoría</th><th>Precio</th><th></th></tr>`
       + cachedProducts.map(p => `<tr>
+          <td>${p.img ? `<img src="${p.img}" style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid #e8e8e2;" onerror="this.style.display='none'"/>` : '<div style="width:44px;height:44px;border-radius:8px;background:#f0f0ea;display:flex;align-items:center;justify-content:center;font-size:18px;">🛒</div>'}</td>
           <td style="font-weight:600;">${p.name}</td>
           <td style="color:#aaa;">${p.cat}</td>
           <td style="color:#1D9E75;font-weight:700;">${fmt(p.price)}</td>
@@ -423,14 +430,20 @@ function renderCliente() {
     ? '<div class="empty">No hay productos disponibles aún</div>'
     : cachedProducts.map(p => `
         <div class="product-card">
-          <div class="product-cat">${p.cat}</div>
-          <div class="product-name">${p.name}</div>
-          <div class="product-price">${fmt(p.price)}</div>
-          <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
-            <input type="number" id="qty-${p.id}" value="1" min="1"
-              style="width:52px;padding:6px 8px;font-size:13px;border:1px solid #e0e0da;border-radius:8px;background:#fafaf8;color:#1a1a1a;outline:none;"/>
-            <button class="btn-add" style="flex:1;padding:7px 10px;font-size:12px;"
-              onclick="addPurchase('${p.id}')">Agregar</button>
+          ${p.img
+            ? `<img class="product-img" src="${p.img}" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/><div class="product-img-placeholder" style="display:none;">🛒</div>`
+            : `<div class="product-img-placeholder">🛒</div>`
+          }
+          <div class="product-info">
+            <div class="product-cat">${p.cat}</div>
+            <div class="product-name">${p.name}</div>
+            <div class="product-price">${fmt(p.price)}</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+              <input type="number" id="qty-${p.id}" value="1" min="1"
+                style="width:52px;padding:6px 8px;font-size:13px;border:1px solid #e0e0da;border-radius:8px;background:#fafaf8;color:#1a1a1a;outline:none;"/>
+              <button class="btn-add" style="flex:1;padding:7px 10px;font-size:12px;"
+                onclick="addPurchase('${p.id}')">Agregar</button>
+            </div>
           </div>
         </div>`).join('');
   renderClientPurchases();
@@ -539,18 +552,22 @@ function addProduct() {
   const name  = document.getElementById('np-name').value.trim();
   const price = parseFloat(document.getElementById('np-price').value);
   const cat   = document.getElementById('np-cat').value.trim();
+  const img   = document.getElementById('np-img').value.trim();
   const err   = document.getElementById('add-prod-error');
   const btn   = document.getElementById('btn-add-prod');
-  if (!name||!price||!cat) { err.textContent='Completa todos los campos'; return; }
+  if (!name||!price||!cat) { err.textContent='Completa nombre, precio y categoría'; return; }
   btn.disabled=true; btn.textContent='Guardando...';
   const id = uid();
-  db.collection('products').doc(id).set({id,name,price,cat})
+  const data = {id,name,price,cat};
+  if (img) data.img = img;
+  db.collection('products').doc(id).set(data)
     .then(() => {
-      cachedProducts.push({id,name,price,cat});
+      cachedProducts.push(data);
       err.textContent='';
       document.getElementById('np-name').value='';
       document.getElementById('np-price').value='';
       document.getElementById('np-cat').value='';
+      document.getElementById('np-img').value='';
       renderAdmin();
     })
     .finally(() => { btn.disabled=false; btn.textContent='+ Agregar'; });
