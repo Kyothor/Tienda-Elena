@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Tienda Elena</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh;}
+  .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .login-card{background:#fff;border-radius:16px;border:1px solid #e8e8e2;padding:2rem;width:100%;max-width:360px;box-shadow:0 2px 20px rgba(0,0,0,0.06);}
+  .login-logo{font-size:24px;font-weight:700;color:#1a1a1a;margin-bottom:4px;letter-spacing:-0.5px;}
+  .login-sub{font-size:13px;color:#888;margin-bottom:1.5rem;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:#666;margin-bottom:5px;font-weight:500;}
+  .field input{width:100%;padding:10px 12px;font-size:14px;border:1px solid #e0e0da;border-radius:10px;background:#fafaf8;color:#1a1a1a;outline:none;transition:border-color .2s;}
+  .field input:focus{border-color:#1D9E75;}
+  .btn-primary{width:100%;padding:11px;background:#1D9E75;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px;transition:background .2s;}
+  .btn-primary:hover{background:#0F6E56;}
+  .btn-primary:disabled{background:#aaa;cursor:not-allowed;}
+  .error-msg{font-size:12px;color:#c0392b;margin-top:8px;}
+  .topbar{background:#fff;border-bottom:1px solid #e8e8e2;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+  .topbar-title{font-size:15px;font-weight:700;color:#1a1a1a;}
+  .topbar-sub{font-size:11px;color:#888;margin-top:1px;}
+  .btn-logout{font-size:12px;padding:6px 14px;border:1px solid #e0e0da;border-radius:8px;background:#fff;color:#666;cursor:pointer;font-weight:500;}
+  .btn-logout:hover{background:#f5f5f0;}
+  .content{padding:20px;max-width:720px;margin:0 auto;}
+  .tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid #e8e8e2;}
+  .tab{padding:9px 16px;font-size:13px;cursor:pointer;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;border-top:none;border-left:none;border-right:none;font-weight:500;transition:all .15s;}
+  .tab.active{color:#1D9E75;border-bottom-color:#1D9E75;}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+  .card{background:#fff;border:1px solid #e8e8e2;border-radius:14px;padding:1rem 1.25rem;margin-bottom:14px;}
+  .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:20px;}
+  .metric{background:#fff;border:1px solid #e8e8e2;border-radius:12px;padding:14px;}
+  .metric-label{font-size:11px;color:#888;margin-bottom:4px;font-weight:500;}
+  .metric-val{font-size:22px;font-weight:700;color:#1a1a1a;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;padding:8px 10px;color:#888;font-weight:600;border-bottom:1px solid #e8e8e2;font-size:11px;text-transform:uppercase;letter-spacing:.3px;}
+  td{padding:11px 10px;border-bottom:1px solid #f0f0ea;color:#1a1a1a;vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;}
+  .badge-green{background:#EAF3DE;color:#2d6a11;}
+  .badge-amber{background:#FFF3DC;color:#a05c00;}
+  .badge-red{background:#FDEAEA;color:#a32d2d;}
+  .form-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+  .form-row .field{flex:1;margin-bottom:0;min-width:110px;}
+  .btn-add{padding:10px 16px;font-size:13px;border:none;border-radius:10px;background:#1D9E75;color:#fff;cursor:pointer;font-weight:600;white-space:nowrap;transition:background .2s;}
+  .btn-add:hover{background:#0F6E56;}
+  .btn-add:disabled{background:#aaa;cursor:not-allowed;}
+  .btn-danger{padding:5px 10px;font-size:12px;border:1px solid #f0c0c0;border-radius:8px;background:#fff;color:#c0392b;cursor:pointer;}
+  .btn-danger:hover{background:#fdeaea;}
+  .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+  .product-card{background:#fff;border:1px solid #e8e8e2;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:5px;transition:border-color .2s;}
+  .product-card:hover{border-color:#1D9E75;}
+  .product-name{font-size:13px;font-weight:600;}
+  .product-price{font-size:14px;color:#1D9E75;font-weight:700;}
+  .product-cat{font-size:11px;color:#aaa;font-weight:500;}
+  .purchase-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #f0f0ea;}
+  .purchase-row:last-child{border-bottom:none;}
+  .total-bar{background:#f5f5f0;border:1px solid #e8e8e2;border-radius:12px;padding:14px 1.25rem;display:flex;align-items:center;justify-content:space-between;margin-top:14px;}
+  .total-label{font-size:13px;color:#666;font-weight:500;}
+  .total-val{font-size:22px;font-weight:700;color:#1D9E75;}
+  .initials{width:34px;height:34px;border-radius:50%;background:#E1F5EE;color:#0F6E56;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+  .alert{padding:11px 14px;border-radius:10px;font-size:13px;margin-bottom:14px;font-weight:500;}
+  .alert-success{background:#EAF3DE;color:#2d6a11;}
+  .empty{font-size:13px;color:#aaa;text-align:center;padding:2.5rem;}
+  .loading-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f5f5f0;gap:14px;}
+  .spinner{width:32px;height:32px;border:3px solid #e0e0da;border-top-color:#1D9E75;border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-text{font-size:14px;color:#888;}
+  .section-title{font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:14px;}
+  .client-block{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #f0f0ea;}
+  .client-block:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+  .client-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  @media(max-width:480px){
+    .metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .form-row{flex-direction:column;}
+    .form-row .field{min-width:100%;}
+    .btn-add{width:100%;}
+  }
+</style>
+</head>
+<body>
+
+<div id="loading-screen" class="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-text">Cargando Tienda Elena...</div>
+</div>
+
+<div id="screen-login" style="display:none;">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">Tienda Elena</div>
+      <div class="login-sub">Ingresa con tu cuenta</div>
+      <div class="field"><label>Usuario</label><input type="text" id="login-user" placeholder="tu usuario" autocomplete="username"/></div>
+      <div class="field"><label>Contraseña</label><input type="password" id="login-pass" placeholder="••••••" autocomplete="current-password"/></div>
+      <div id="login-error" class="error-msg"></div>
+      <button class="btn-primary" id="btn-login" onclick="doLogin()">Ingresar</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-admin" style="display:none;">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Tienda Elena — Admin</div>
+      <div class="topbar-sub" id="admin-month-label"></div>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
+  </div>
+  <div class="content">
+    <div class="metrics" id="admin-metrics"></div>
+    <div class="tabs">
+      <button class="tab active" id="tbtn-clientes" onclick="showAdminTab('clientes')">Clientes</button>
+      <button class="tab" id="tbtn-compras"  onclick="showAdminTab('compras')">Compras del mes</button>
+      <button class="tab" id="tbtn-productos" onclick="showAdminTab('productos')">Productos</button>
+    </div>
+    <div id="tab-clientes" class="tab-content active">
+      <div class="card" style="margin-bottom:14px;">
+        <div class="section-title">Clientes registrados</div>
+        <div id="admin-clients-list"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Agregar cliente</div>
+        <div class="form-row">
+          <div class="field"><label>Nombre completo</label><input id="nc-name" type="text" placeholder="Ej: Ana Torres"/></div>
+          <div class="field"><label>Usuario</label><input id="nc-user" type="text" placeholder="ana"/></div>
+          <div class="field"><label>Contraseña (mín. 6 caracteres)</label><input id="nc-pass" type="password" placeholder="clave"/></div>
+          <button class="btn-add" id="btn-add-client" onclick="addClient()">+ Agregar</button>
+        </div>
+        <div id="add-client-msg" class="error-msg"></div>
+      </div>
+    </div>
+    <div id="tab-compras" class="tab-content">
+      <div class="card">
+        <div class="section-title">Compras del mes por cliente</div>
+        <div id="admin-purchases-list"></div>
+      </div>
+    </div>
+    <div id="tab-productos" class="tab-content">
+      <div class="card" style="margin-bottom:14px;">
+        <div class="section-title">Catálogo de productos</div>
+        <div id="admin-products-list"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Agregar producto</div>
+        <div class="form-row">
+          <div class="field"><label>Nombre</label><input id="np-name" type="text" placeholder="Ej: Leche entera"/></div>
+          <div class="field"><label>Precio ($)</label><input id="np-price" type="number" placeholder="0" min="0"/></div>
+          <div class="field"><label>Categoría</label><input id="np-cat" type="text" placeholder="Ej: Lácteos"/></div>
+          <button class="btn-add" id="btn-add-prod" onclick="addProduct()">+ Agregar</button>
+        </div>
+        <div id="add-prod-error" class="error-msg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="screen-cliente" style="display:none;">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Tienda Elena</div>
+      <div class="topbar-sub" id="client-welcome"></div>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
+  </div>
+  <div class="content">
+    <div class="tabs">
+      <button class="tab active" id="tbtn-catalogo"   onclick="showClientTab('catalogo')">Catálogo</button>
+      <button class="tab"        id="tbtn-miscuentas" onclick="showClientTab('miscuentas')">Mis compras</button>
+    </div>
+    <div id="tab-catalogo" class="tab-content active">
+      <div id="client-alert"></div>
+      <div class="product-grid" id="client-product-grid"></div>
+    </div>
+    <div id="tab-miscuentas" class="tab-content">
+      <div class="card">
+        <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+          Mis compras del mes
+          <span id="client-month-badge" style="font-size:12px;color:#aaa;font-weight:400;"></span>
+        </div>
+        <div id="client-purchases-list"></div>
+        <div class="total-bar" id="client-total-bar"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword,
+  createUserWithEmailAndPassword, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDocs, setDoc,
+  deleteDoc, query, where, addDoc, onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const CFG = {
+  apiKey:            "AIzaSyBLaUqijK3HC2Pn3CmT6xDi96MZnp0HrJs",
+  authDomain:        "tienda-elena.firebaseapp.com",
+  projectId:         "tienda-elena",
+  storageBucket:     "tienda-elena.firebasestorage.app",
+  messagingSenderId: "1077308083283",
+  appId:             "1:1077308083283:web:ecedcfbe86e61fbb870aa6"
+};
+
+const ADMIN_EMAIL   = "alezzespinoza14@gmail.com";
+const CLIENT_DOMAIN = "@tienda-elena.com";
+
+// App principal — sesión del usuario activo
+const mainApp  = initializeApp(CFG, "main");
+const mainAuth = getAuth(mainApp);
+const db       = getFirestore(mainApp);
+
+// App secundaria — solo para crear usuarios sin tocar la sesión principal
+const secApp   = initializeApp(CFG, "secondary");
+const secAuth  = getAuth(secApp);
+
+const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto',
+                'Septiembre','Octubre','Noviembre','Diciembre'];
+const now          = new Date();
+const currentMonth = now.getMonth();
+const currentYear  = now.getFullYear();
+const monthKey     = currentYear + '-' + String(currentMonth + 1).padStart(2,'0');
+const todayStr     = now.toISOString().slice(0,10);
+
+let currentUser     = null;
+let cachedUsers     = [];
+let cachedProducts  = [];
+let cachedPurchases = [];
+let unsubPurchases  = null;
+
+const fmt      = n    => '$' + Math.round(n).toLocaleString('es-CO');
+const initials = name => name.trim().split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const uid      = ()   => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const show     = id   => { const el = document.getElementById(id); if(el) el.style.display='block'; };
+const hide     = id   => { const el = document.getElementById(id); if(el) el.style.display='none'; };
+const toEmail  = u    => u.includes('@') ? u : u.toLowerCase().trim() + CLIENT_DOMAIN;
+
+function showScreen(screen) {
+  ['loading-screen','screen-login','screen-admin','screen-cliente'].forEach(hide);
+  show(screen);
+}
+
+// ── SEED productos iniciales ─────────────────────────────────
+async function seedProducts() {
+  const snap = await getDocs(collection(db,'products'));
+  if (!snap.empty) return;
+  const defaults = [
+    {id:'p1',name:'Leche entera',   price:3200,cat:'Lácteos'},
+    {id:'p2',name:'Queso campesino',price:8500,cat:'Lácteos'},
+    {id:'p3',name:'Arroz 1kg',      price:4200,cat:'Granos'},
+    {id:'p4',name:'Aceite 1L',      price:9800,cat:'Aceites'},
+    {id:'p5',name:'Azúcar 1kg',     price:3500,cat:'Granos'},
+    {id:'p6',name:'Jabón de baño',  price:2800,cat:'Aseo'},
+  ];
+  for (const p of defaults) await setDoc(doc(db,'products',p.id), p);
+}
+
+async function loadAll() {
+  const [uSnap, pSnap] = await Promise.all([
+    getDocs(collection(db,'users')),
+    getDocs(collection(db,'products'))
+  ]);
+  cachedUsers    = uSnap.docs.map(d => d.data());
+  cachedProducts = pSnap.docs.map(d => d.data());
+}
+
+function subscribePurchases(cb) {
+  if (unsubPurchases) { unsubPurchases(); unsubPurchases = null; }
+  const q = query(collection(db,'purchases'), where('monthKey','==',monthKey));
+  unsubPurchases = onSnapshot(q, snap => {
+    cachedPurchases = snap.docs.map(d => ({id:d.id,...d.data()}));
+    cb();
+  });
+}
+
+// ── AUTH ─────────────────────────────────────────────────────
+onAuthStateChanged(mainAuth, async fbUser => {
+  if (!fbUser) {
+    currentUser = null;
+    if (unsubPurchases) { unsubPurchases(); unsubPurchases = null; }
+    showScreen('screen-login');
+    document.getElementById('btn-login').disabled = false;
+    document.getElementById('btn-login').textContent = 'Ingresar';
+    return;
+  }
+
+  // Recargar usuarios por si acaba de crearse uno nuevo
+  await loadAll();
+
+  if (fbUser.email === ADMIN_EMAIL) {
+    currentUser = {id:'admin', name:'Administrador', username:'admin', role:'admin'};
+  } else {
+    const profile = cachedUsers.find(u => toEmail(u.username) === fbUser.email);
+    if (!profile) { await signOut(mainAuth); return; }
+    currentUser = profile;
+  }
+
+  document.getElementById('btn-login').disabled = false;
+  document.getElementById('btn-login').textContent = 'Ingresar';
+  document.getElementById('login-error').textContent = '';
+
+  if (currentUser.role === 'admin') {
+    subscribePurchases(renderAdmin);
+    renderAdmin();
+    showScreen('screen-admin');
+  } else {
+    subscribePurchases(renderCliente);
+    renderCliente();
+    showScreen('screen-cliente');
+  }
+});
+
+async function doLogin() {
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  const btn = document.getElementById('btn-login');
+  const err = document.getElementById('login-error');
+  if (!username || !password) { err.textContent = 'Completa usuario y contraseña'; return; }
+  btn.disabled = true; btn.textContent = 'Ingresando...'; err.textContent = '';
+  try {
+    await signInWithEmailAndPassword(mainAuth, toEmail(username), password);
+  } catch(e) {
+    err.textContent = 'Usuario o contraseña incorrectos';
+    btn.disabled = false; btn.textContent = 'Ingresar';
+  }
+}
+
+async function doLogout() {
+  if (unsubPurchases) { unsubPurchases(); unsubPurchases = null; }
+  currentUser = null;
+  await signOut(mainAuth);
+}
+
+// ── TABS ─────────────────────────────────────────────────────
+function showAdminTab(tab) {
+  ['clientes','compras','productos'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('tbtn-'+t).classList.toggle('active', t===tab);
+  });
+}
+function showClientTab(tab) {
+  ['catalogo','miscuentas'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('tbtn-'+t).classList.toggle('active', t===tab);
+  });
+  if (tab === 'miscuentas') renderClientPurchases();
+}
+
+// ── HELPERS ──────────────────────────────────────────────────
+const getMonthPurchases = () => cachedPurchases.filter(p => p.monthKey === monthKey);
+const getProduct        = id => cachedProducts.find(p => p.id === id);
+const clientDebt = uid =>
+  getMonthPurchases().filter(p => p.userId === uid)
+    .reduce((s,p) => { const pr = getProduct(p.productId); return s + (pr ? pr.price*p.qty : 0); }, 0);
+
+// ── RENDER ADMIN ─────────────────────────────────────────────
+function renderAdmin() {
+  document.getElementById('admin-month-label').textContent = MONTHS[currentMonth]+' '+currentYear;
+  const clients   = cachedUsers.filter(u => u.role === 'cliente');
+  const mp        = getMonthPurchases();
+  const totalDebt = clients.reduce((s,c) => s + clientDebt(c.id), 0);
+
+  document.getElementById('admin-metrics').innerHTML =
+    `<div class="metric"><div class="metric-label">Clientes</div><div class="metric-val">${clients.length}</div></div>
+     <div class="metric"><div class="metric-label">Compras del mes</div><div class="metric-val">${mp.length}</div></div>
+     <div class="metric"><div class="metric-label">Total deuda mes</div><div class="metric-val" style="font-size:17px;">${fmt(totalDebt)}</div></div>`;
+
+  // Tabla clientes
+  const cl = document.getElementById('admin-clients-list');
+  cl.innerHTML = clients.length === 0
+    ? '<div class="empty">Sin clientes aún. Agrega el primero abajo.</div>'
+    : `<table><tr><th>Cliente</th><th>Usuario</th><th>Compras</th><th>Deuda mes</th><th></th></tr>`
+      + clients.map(c => {
+          const debt  = clientDebt(c.id);
+          const badge = debt===0?'badge-green':debt>50000?'badge-red':'badge-amber';
+          return `<tr>
+            <td><div style="display:flex;align-items:center;gap:9px;"><div class="initials">${initials(c.name)}</div>${c.name}</div></td>
+            <td style="color:#aaa;">${c.username}</td>
+            <td>${mp.filter(p=>p.userId===c.id).length}</td>
+            <td><span class="badge ${badge}">${fmt(debt)}</span></td>
+            <td><button class="btn-danger" onclick="_deleteClient('${c.id}')">Eliminar</button></td>
+          </tr>`;
+        }).join('') + '</table>';
+
+  // Compras por cliente
+  const pl = document.getElementById('admin-purchases-list');
+  pl.innerHTML = clients.length === 0
+    ? '<div class="empty">Sin clientes registrados</div>'
+    : clients.map(c => {
+        const cmp  = mp.filter(p => p.userId === c.id);
+        const debt = clientDebt(c.id);
+        return `<div class="client-block">
+          <div class="client-header">
+            <div class="initials">${initials(c.name)}</div>
+            <span style="font-weight:600;font-size:14px;">${c.name}</span>
+            <span class="badge ${debt===0?'badge-green':debt>50000?'badge-red':'badge-amber'}">${fmt(debt)}</span>
+          </div>
+          ${cmp.length===0
+            ? `<div style="font-size:12px;color:#aaa;padding-left:44px;">Sin compras este mes</div>`
+            : `<table style="margin-left:44px;width:calc(100% - 44px);">
+                <tr><th>Producto</th><th>Cant.</th><th>Subtotal</th><th>Fecha</th><th></th></tr>`
+              + cmp.map(p => {
+                  const pr = getProduct(p.productId);
+                  return `<tr>
+                    <td>${pr?pr.name:'–'}</td><td>${p.qty}</td>
+                    <td>${pr?fmt(pr.price*p.qty):'–'}</td>
+                    <td style="color:#aaa;">${p.date}</td>
+                    <td><button class="btn-danger" onclick="_adminDelPurchase('${p.id}')">×</button></td>
+                  </tr>`;
+                }).join('') + '</table>'
+          }
+        </div>`;
+      }).join('');
+
+  // Productos
+  const pt = document.getElementById('admin-products-list');
+  pt.innerHTML = cachedProducts.length===0
+    ? '<div class="empty">Sin productos. Agrega el primero abajo.</div>'
+    : `<table><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th></th></tr>`
+      + cachedProducts.map(p => `<tr>
+          <td style="font-weight:600;">${p.name}</td>
+          <td style="color:#aaa;">${p.cat}</td>
+          <td style="color:#1D9E75;font-weight:700;">${fmt(p.price)}</td>
+          <td><button class="btn-danger" onclick="_deleteProduct('${p.id}')">Eliminar</button></td>
+        </tr>`).join('') + '</table>';
+}
+
+// ── RENDER CLIENTE ───────────────────────────────────────────
+function renderCliente() {
+  document.getElementById('client-welcome').textContent =
+    'Hola, ' + currentUser.name + ' · ' + MONTHS[currentMonth]+' '+currentYear;
+  document.getElementById('client-month-badge').textContent = MONTHS[currentMonth]+' '+currentYear;
+
+  const grid = document.getElementById('client-product-grid');
+  grid.innerHTML = cachedProducts.length===0
+    ? '<div class="empty">No hay productos disponibles aún</div>'
+    : cachedProducts.map(p => `
+        <div class="product-card">
+          <div class="product-cat">${p.cat}</div>
+          <div class="product-name">${p.name}</div>
+          <div class="product-price">${fmt(p.price)}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+            <input type="number" id="qty-${p.id}" value="1" min="1"
+              style="width:52px;padding:6px 8px;font-size:13px;border:1px solid #e0e0da;
+                     border-radius:8px;background:#fafaf8;color:#1a1a1a;outline:none;"/>
+            <button class="btn-add" style="flex:1;padding:7px 10px;font-size:12px;"
+              onclick="_addPurchase('${p.id}')">Agregar</button>
+          </div>
+        </div>`).join('');
+  renderClientPurchases();
+}
+
+function renderClientPurchases() {
+  if (!currentUser) return;
+  const mp    = getMonthPurchases().filter(p => p.userId === currentUser.id);
+  const total = clientDebt(currentUser.id);
+  const list  = document.getElementById('client-purchases-list');
+  list.innerHTML = mp.length===0
+    ? '<div class="empty">No has registrado compras este mes</div>'
+    : mp.map(p => {
+        const pr = getProduct(p.productId);
+        return `<div class="purchase-row">
+          <div>
+            <div style="font-size:13px;font-weight:600;">${pr?pr.name:'Producto eliminado'}</div>
+            <div style="font-size:12px;color:#aaa;margin-top:2px;">Cantidad: ${p.qty} · ${p.date}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:14px;font-weight:700;color:#1D9E75;">${pr?fmt(pr.price*p.qty):'–'}</span>
+            <button class="btn-danger" onclick="_deleteMyPurchase('${p.id}')">×</button>
+          </div>
+        </div>`;
+      }).join('');
+  document.getElementById('client-total-bar').innerHTML =
+    `<span class="total-label">Total a pagar · ${MONTHS[currentMonth]}</span>
+     <span class="total-val">${fmt(total)}</span>`;
+}
+
+// ── ACCIONES ─────────────────────────────────────────────────
+async function addPurchase(productId) {
+  const qty = parseInt(document.getElementById('qty-'+productId)?.value)||1;
+  await addDoc(collection(db,'purchases'),{userId:currentUser.id,productId,qty,date:todayStr,monthKey});
+  const pr = getProduct(productId);
+  const al = document.getElementById('client-alert');
+  al.innerHTML = `<div class="alert alert-success">✓ ${pr.name} ×${qty} agregado a tu cuenta</div>`;
+  setTimeout(()=>al.innerHTML='',2500);
+}
+
+const deleteMyPurchase    = id => deleteDoc(doc(db,'purchases',id));
+const adminDelPurchase    = id => deleteDoc(doc(db,'purchases',id));
+
+async function addClient() {
+  const name     = document.getElementById('nc-name').value.trim();
+  const username = document.getElementById('nc-user').value.trim().toLowerCase();
+  const password = document.getElementById('nc-pass').value;
+  const msg = document.getElementById('add-client-msg');
+  const btn = document.getElementById('btn-add-client');
+
+  msg.style.color = '#c0392b';
+  if (!name||!username||!password)       { msg.textContent='Completa todos los campos'; return; }
+  if (cachedUsers.find(u=>u.username===username)) { msg.textContent='Ese usuario ya existe'; return; }
+  if (password.length < 6)               { msg.textContent='La contraseña debe tener mínimo 6 caracteres'; return; }
+
+  btn.disabled=true; btn.textContent='Creando...'; msg.textContent='';
+
+  try {
+    // Usar app secundaria → no afecta la sesión del admin
+    const cred    = await createUserWithEmailAndPassword(secAuth, username+CLIENT_DOMAIN, password);
+    const newUser = {id:cred.user.uid, name, username, role:'cliente', email:username+CLIENT_DOMAIN};
+    await setDoc(doc(db,'users',cred.user.uid), newUser);
+    await signOut(secAuth); // cerrar sesión de la app secundaria
+
+    cachedUsers.push(newUser);
+    document.getElementById('nc-name').value='';
+    document.getElementById('nc-user').value='';
+    document.getElementById('nc-pass').value='';
+    msg.style.color = '#2d6a11';
+    msg.textContent = `✓ Cliente "${name}" creado correctamente`;
+    setTimeout(()=>msg.textContent='',3000);
+    renderAdmin();
+  } catch(e) {
+    if (e.code==='auth/email-already-in-use') msg.textContent='Ese usuario ya existe en el sistema';
+    else { msg.textContent='Error al crear cliente. Intenta de nuevo.'; console.error(e); }
+    btn.disabled=false; btn.textContent='+ Agregar';
+    return;
+  }
+  btn.disabled=false; btn.textContent='+ Agregar';
+}
+
+async function deleteClient(id) {
+  if (!confirm('¿Eliminar este cliente y todas sus compras del mes?')) return;
+  const toDel = cachedPurchases.filter(p=>p.userId===id);
+  for (const p of toDel) await deleteDoc(doc(db,'purchases',p.id));
+  await deleteDoc(doc(db,'users',id));
+  cachedUsers = cachedUsers.filter(u=>u.id!==id);
+  renderAdmin();
+}
+
+async function addProduct() {
+  const name  = document.getElementById('np-name').value.trim();
+  const price = parseFloat(document.getElementById('np-price').value);
+  const cat   = document.getElementById('np-cat').value.trim();
+  const err   = document.getElementById('add-prod-error');
+  const btn   = document.getElementById('btn-add-prod');
+  if (!name||!price||!cat) { err.textContent='Completa todos los campos'; return; }
+  btn.disabled=true; btn.textContent='Guardando...';
+  const id = uid();
+  await setDoc(doc(db,'products',id),{id,name,price,cat});
+  cachedProducts.push({id,name,price,cat});
+  err.textContent='';
+  document.getElementById('np-name').value='';
+  document.getElementById('np-price').value='';
+  document.getElementById('np-cat').value='';
+  btn.disabled=false; btn.textContent='+ Agregar';
+  renderAdmin();
+}
+
+async function deleteProduct(id) {
+  if (!confirm('¿Eliminar este producto?')) return;
+  await deleteDoc(doc(db,'products',id));
+  cachedProducts = cachedProducts.filter(p=>p.id!==id);
+  renderAdmin();
+}
+
+// Exponer a onclick
+window._addPurchase      = addPurchase;
+window._deleteMyPurchase = deleteMyPurchase;
+window._adminDelPurchase = adminDelPurchase;
+window._deleteClient     = deleteClient;
+window._deleteProduct    = deleteProduct;
+window.doLogin           = doLogin;
+window.doLogout          = doLogout;
+window.showAdminTab      = showAdminTab;
+window.showClientTab     = showClientTab;
+
+// ── INICIO ───────────────────────────────────────────────────
+(async () => {
+  try {
+    await seedProducts();
+    await loadAll();
+  } catch(e) {
+    console.error('Error de conexión con Firebase:', e);
+  }
+  // Si hay sesión activa onAuthStateChanged la detecta; si no, mostrar login
+  if (!mainAuth.currentUser) showScreen('screen-login');
+})();
+
+document.addEventListener('keydown', e => {
+  if (e.key==='Enter' && document.getElementById('screen-login').style.display!=='none') doLogin();
+});
+</script>
+</body>
+</html>
