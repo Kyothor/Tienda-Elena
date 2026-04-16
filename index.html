@@ -43,7 +43,6 @@
   .badge-green{background:#EAF3DE;color:#2d6a11;}
   .badge-amber{background:#FFF3DC;color:#a05c00;}
   .badge-red{background:#FDEAEA;color:#a32d2d;}
-  .badge-gray{background:#f0f0ea;color:#888;}
   .form-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
   .form-row .field{flex:1;margin-bottom:0;min-width:110px;}
   .btn-add{padding:10px 16px;font-size:13px;border:none;border-radius:10px;background:#1D9E75;color:#fff;cursor:pointer;font-weight:600;white-space:nowrap;}
@@ -62,7 +61,7 @@
   .product-name{font-size:13px;font-weight:600;}
   .product-price{font-size:14px;color:#1D9E75;font-weight:700;}
   .product-cat{font-size:11px;color:#aaa;font-weight:500;}
-  .stock-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;display:inline-block;width:fit-content;}
+  .stock-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;display:inline-block;}
   .stock-ok{background:#EAF3DE;color:#2d6a11;}
   .stock-low{background:#FFF3DC;color:#a05c00;}
   .stock-out{background:#FDEAEA;color:#a32d2d;}
@@ -85,6 +84,11 @@
   .client-block:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
   .client-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
   .agotado-banner{background:#FDEAEA;color:#a32d2d;font-size:11px;font-weight:700;text-align:center;padding:4px;letter-spacing:.5px;}
+  .month-selector{display:flex;align-items:center;gap:10px;margin-bottom:20px;background:#fff;border:1px solid #e8e8e2;border-radius:12px;padding:12px 16px;}
+  .month-selector label{font-size:12px;color:#888;font-weight:500;white-space:nowrap;}
+  .month-selector select{flex:1;padding:7px 10px;font-size:13px;border:1px solid #e0e0da;border-radius:8px;background:#fafaf8;color:#1a1a1a;outline:none;cursor:pointer;}
+  .month-selector select:focus{border-color:#1D9E75;}
+  .historic-badge{display:inline-block;background:#FFF3DC;color:#a05c00;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-left:8px;vertical-align:middle;}
   @media(max-width:480px){
     .metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
     .form-row{flex-direction:column;}
@@ -125,16 +129,21 @@
     <div class="metrics" id="admin-metrics"></div>
     <div class="tabs">
       <button class="tab active" id="tbtn-clientes"  onclick="showAdminTab('clientes')">Clientes</button>
-      <button class="tab"        id="tbtn-compras"   onclick="showAdminTab('compras')">Compras del mes</button>
+      <button class="tab"        id="tbtn-compras"   onclick="showAdminTab('compras')">Compras</button>
       <button class="tab"        id="tbtn-productos" onclick="showAdminTab('productos')">Productos</button>
     </div>
 
     <div id="tab-clientes" class="tab-content active">
+      <!-- Selector de mes -->
+      <div class="month-selector">
+        <label>Ver mes:</label>
+        <select id="month-select-clientes" onchange="changeViewMonth('clientes')"></select>
+      </div>
       <div class="card" style="margin-bottom:14px;">
-        <div class="section-title">Clientes registrados</div>
+        <div class="section-title" id="clients-section-title">Clientes registrados</div>
         <div id="admin-clients-list"></div>
       </div>
-      <div class="card">
+      <div class="card" id="add-client-card">
         <div class="section-title">Agregar cliente</div>
         <div class="form-row">
           <div class="field"><label>Nombre completo</label><input id="nc-name" type="text" placeholder="Ej: Ana Torres"/></div>
@@ -147,8 +156,13 @@
     </div>
 
     <div id="tab-compras" class="tab-content">
+      <!-- Selector de mes -->
+      <div class="month-selector">
+        <label>Ver mes:</label>
+        <select id="month-select-compras" onchange="changeViewMonth('compras')"></select>
+      </div>
       <div class="card">
-        <div class="section-title">Compras del mes por cliente</div>
+        <div class="section-title" id="compras-section-title">Compras del mes por cliente</div>
         <div id="admin-purchases-list"></div>
       </div>
     </div>
@@ -226,23 +240,27 @@ const CLIENT_DOMAIN = "@tienda-elena.com";
 const mainApp  = firebase.initializeApp(CFG, "main");
 const mainAuth = mainApp.auth();
 const db       = mainApp.firestore();
-
-const secApp  = firebase.initializeApp(CFG, "secondary");
-const secAuth = secApp.auth();
+const secApp   = firebase.initializeApp(CFG, "secondary");
+const secAuth  = secApp.auth();
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto',
                 'Septiembre','Octubre','Noviembre','Diciembre'];
 const now          = new Date();
 const currentMonth = now.getMonth();
 const currentYear  = now.getFullYear();
-const monthKey     = currentYear + '-' + String(currentMonth + 1).padStart(2,'0');
+const currentMonthKey = currentYear + '-' + String(currentMonth + 1).padStart(2,'0');
 const todayStr     = now.toISOString().slice(0,10);
+
+// Mes que se está viendo en admin (puede ser histórico)
+let viewMonthKey = currentMonthKey;
 
 let currentUser     = null;
 let cachedUsers     = [];
 let cachedProducts  = [];
-let cachedPurchases = [];
+let cachedPurchases = [];   // compras del mes actual (para clientes y escritura)
+let viewPurchases   = [];   // compras del mes que se está viendo en admin
 let unsubPurchases  = null;
+let unsubView       = null;
 
 const fmt      = n    => '$' + Math.round(n).toLocaleString('es-CO');
 const initials = name => name.trim().split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
@@ -256,11 +274,47 @@ function showScreen(id) {
   document.getElementById(id).style.display = 'block';
 }
 
-function stockTag(stock) {
-  if (stock === undefined || stock === null) return '';
-  if (stock <= 0)  return '<span class="stock-tag stock-out">Agotado</span>';
-  if (stock <= 3)  return `<span class="stock-tag stock-low">Stock: ${stock}</span>`;
-  return `<span class="stock-tag stock-ok">Stock: ${stock}</span>`;
+// Genera los últimos 12 meses como opciones
+function buildMonthOptions() {
+  const options = [];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(currentYear, currentMonth - i, 1);
+    const y = d.getFullYear();
+    const m = d.getMonth();
+    const key = y + '-' + String(m + 1).padStart(2,'0');
+    const label = MONTHS[m] + ' ' + y + (i === 0 ? ' (mes actual)' : '');
+    options.push({key, label});
+  }
+  return options;
+}
+
+function populateMonthSelectors() {
+  const options = buildMonthOptions();
+  ['month-select-clientes','month-select-compras'].forEach(selId => {
+    const sel = document.getElementById(selId);
+    sel.innerHTML = options.map(o =>
+      `<option value="${o.key}" ${o.key===viewMonthKey?'selected':''}>${o.label}</option>`
+    ).join('');
+  });
+}
+
+function changeViewMonth(tab) {
+  const selId = tab === 'clientes' ? 'month-select-clientes' : 'month-select-compras';
+  const newKey = document.getElementById(selId).value;
+  viewMonthKey = newKey;
+  // Sincronizar el otro selector
+  const otherId = tab === 'clientes' ? 'month-select-compras' : 'month-select-clientes';
+  document.getElementById(otherId).value = newKey;
+  loadViewPurchases();
+}
+
+function isCurrentMonth() {
+  return viewMonthKey === currentMonthKey;
+}
+
+function viewMonthLabel() {
+  const [y, m] = viewMonthKey.split('-');
+  return MONTHS[parseInt(m)-1] + ' ' + y;
 }
 
 async function seedProducts() {
@@ -286,13 +340,25 @@ async function loadAll() {
   cachedProducts = pSnap.docs.map(d => d.data());
 }
 
+// Suscripción al mes actual (para clientes y escritura)
 function subscribePurchases(cb) {
   if (unsubPurchases) { unsubPurchases(); unsubPurchases = null; }
   unsubPurchases = db.collection('purchases')
-    .where('monthKey','==',monthKey)
+    .where('monthKey','==',currentMonthKey)
     .onSnapshot(snap => {
-      cachedPurchases = snap.docs.map(d => ({id:d.id, ...d.data()}));
+      cachedPurchases = snap.docs.map(d => ({id:d.id,...d.data()}));
       cb();
+    });
+}
+
+// Carga compras del mes que se está viendo en admin
+function loadViewPurchases() {
+  if (unsubView) { unsubView(); unsubView = null; }
+  unsubView = db.collection('purchases')
+    .where('monthKey','==',viewMonthKey)
+    .onSnapshot(snap => {
+      viewPurchases = snap.docs.map(d => ({id:d.id,...d.data()}));
+      renderAdmin();
     });
 }
 
@@ -300,6 +366,7 @@ mainAuth.onAuthStateChanged(async fbUser => {
   if (!fbUser) {
     currentUser = null;
     if (unsubPurchases) { unsubPurchases(); unsubPurchases = null; }
+    if (unsubView) { unsubView(); unsubView = null; }
     showScreen('screen-login');
     const btn = document.getElementById('btn-login');
     btn.disabled = false; btn.textContent = 'Ingresar';
@@ -317,8 +384,9 @@ mainAuth.onAuthStateChanged(async fbUser => {
   document.getElementById('btn-login').textContent = 'Ingresar';
   document.getElementById('login-error').textContent = '';
   if (currentUser.role === 'admin') {
-    subscribePurchases(renderAdmin);
-    renderAdmin();
+    populateMonthSelectors();
+    subscribePurchases(() => {}); // mantener escucha del mes actual
+    loadViewPurchases();          // cargar mes visto (arranca en el actual)
     showScreen('screen-admin');
   } else {
     subscribePurchases(renderCliente);
@@ -343,6 +411,7 @@ function doLogin() {
 
 function doLogout() {
   if (unsubPurchases) { unsubPurchases(); unsubPurchases = null; }
+  if (unsubView) { unsubView(); unsubView = null; }
   currentUser = null;
   mainAuth.signOut();
 }
@@ -362,48 +431,58 @@ function showClientTab(tab) {
   if (tab === 'miscuentas') renderClientPurchases();
 }
 
-const getMonthPurchases = () => cachedPurchases.filter(p => p.monthKey === monthKey);
-const getProduct        = id  => cachedProducts.find(p => p.id === id);
-const clientDebt = userId =>
-  getMonthPurchases().filter(p => p.userId === userId)
+const getProduct   = id => cachedProducts.find(p => p.id === id);
+const clientDebtOf = (userId, purchases) =>
+  purchases.filter(p => p.userId === userId)
     .reduce((s,p) => { const pr = getProduct(p.productId); return s + (pr ? pr.price*p.qty : 0); }, 0);
 
 function renderAdmin() {
-  document.getElementById('admin-month-label').textContent = MONTHS[currentMonth]+' '+currentYear;
-  const clients   = cachedUsers.filter(u => u.role === 'cliente');
-  const mp        = getMonthPurchases();
-  const totalDebt = clients.reduce((s,c) => s + clientDebt(c.id), 0);
-  const agotados  = cachedProducts.filter(p => (p.stock||0) <= 0).length;
+  const isHistoric  = !isCurrentMonth();
+  const label       = viewMonthLabel();
+  const purchases   = viewPurchases;
+  const clients     = cachedUsers.filter(u => u.role === 'cliente');
+  const totalDebt   = clients.reduce((s,c) => s + clientDebtOf(c.id, purchases), 0);
+
+  document.getElementById('admin-month-label').textContent = label;
+
+  // Títulos con badge histórico
+  const historicBadge = isHistoric ? `<span class="historic-badge">Histórico</span>` : '';
+  document.getElementById('clients-section-title').innerHTML  = `Clientes · ${label} ${historicBadge}`;
+  document.getElementById('compras-section-title').innerHTML  = `Compras · ${label} ${historicBadge}`;
 
   document.getElementById('admin-metrics').innerHTML =
     `<div class="metric"><div class="metric-label">Clientes</div><div class="metric-val">${clients.length}</div></div>
-     <div class="metric"><div class="metric-label">Compras del mes</div><div class="metric-val">${mp.length}</div></div>
-     <div class="metric"><div class="metric-label">Total deuda mes</div><div class="metric-val" style="font-size:17px;">${fmt(totalDebt)}</div></div>`;
+     <div class="metric"><div class="metric-label">Compras · ${label}</div><div class="metric-val">${purchases.length}</div></div>
+     <div class="metric"><div class="metric-label">Total deuda · ${label}</div><div class="metric-val" style="font-size:17px;">${fmt(totalDebt)}</div></div>`;
 
-  // Tabla clientes
+  // Tabla clientes con deuda del mes visto
   const cl = document.getElementById('admin-clients-list');
   cl.innerHTML = clients.length === 0
-    ? '<div class="empty">Sin clientes aún. Agrega el primero abajo.</div>'
-    : `<table><tr><th>Cliente</th><th>Usuario</th><th>Compras</th><th>Deuda mes</th><th></th></tr>`
+    ? '<div class="empty">Sin clientes registrados</div>'
+    : `<table><tr><th>Cliente</th><th>Usuario</th><th>Compras</th><th>Deuda ${label}</th><th></th></tr>`
       + clients.map(c => {
-          const debt  = clientDebt(c.id);
+          const debt  = clientDebtOf(c.id, purchases);
           const badge = debt===0?'badge-green':debt>50000?'badge-red':'badge-amber';
+          const compras = purchases.filter(p=>p.userId===c.id).length;
           return `<tr>
             <td><div style="display:flex;align-items:center;gap:9px;"><div class="initials">${initials(c.name)}</div>${c.name}</div></td>
             <td style="color:#aaa;">${c.username}</td>
-            <td>${mp.filter(p=>p.userId===c.id).length}</td>
+            <td>${compras}</td>
             <td><span class="badge ${badge}">${fmt(debt)}</span></td>
-            <td><button class="btn-danger" onclick="deleteClient('${c.id}')">Eliminar</button></td>
+            <td>${isHistoric?'':` <button class="btn-danger" onclick="deleteClient('${c.id}')">Eliminar</button>`}</td>
           </tr>`;
         }).join('') + '</table>';
 
-  // Compras por cliente
+  // Ocultar formulario de agregar cliente en vista histórica
+  document.getElementById('add-client-card').style.display = isHistoric ? 'none' : 'block';
+
+  // Compras por cliente del mes visto
   const pl = document.getElementById('admin-purchases-list');
   pl.innerHTML = clients.length === 0
     ? '<div class="empty">Sin clientes registrados</div>'
     : clients.map(c => {
-        const cmp  = mp.filter(p => p.userId === c.id);
-        const debt = clientDebt(c.id);
+        const cmp  = purchases.filter(p => p.userId === c.id);
+        const debt = clientDebtOf(c.id, purchases);
         return `<div class="client-block">
           <div class="client-header">
             <div class="initials">${initials(c.name)}</div>
@@ -411,37 +490,37 @@ function renderAdmin() {
             <span class="badge ${debt===0?'badge-green':debt>50000?'badge-red':'badge-amber'}">${fmt(debt)}</span>
           </div>
           ${cmp.length===0
-            ? `<div style="font-size:12px;color:#aaa;padding-left:44px;">Sin compras este mes</div>`
+            ? `<div style="font-size:12px;color:#aaa;padding-left:44px;">Sin compras en ${label}</div>`
             : `<table style="margin-left:44px;width:calc(100% - 44px);">
-                <tr><th>Producto</th><th>Cant.</th><th>Subtotal</th><th>Fecha</th><th></th></tr>`
+                <tr><th>Producto</th><th>Cant.</th><th>Subtotal</th><th>Fecha</th>${isHistoric?'':'<th></th>'}</tr>`
               + cmp.map(p => {
                   const pr = getProduct(p.productId);
                   return `<tr><td>${pr?pr.name:'–'}</td><td>${p.qty}</td>
-                    <td>${pr?fmt(pr.price*p.qty):'–'}</td><td style="color:#aaa;">${p.date}</td>
-                    <td><button class="btn-danger" onclick="adminDelPurchase('${p.id}','${p.productId}',${p.qty})">×</button></td></tr>`;
+                    <td>${pr?fmt(pr.price*p.qty):'–'}</td>
+                    <td style="color:#aaa;">${p.date}</td>
+                    ${isHistoric?'':`<td><button class="btn-danger" onclick="adminDelPurchase('${p.id}','${p.productId}',${p.qty})">×</button></td>`}
+                  </tr>`;
                 }).join('') + '</table>'
           }
         </div>`;
       }).join('');
 
-  // Productos con inventario
+  // Productos
   const pt = document.getElementById('admin-products-list');
   pt.innerHTML = cachedProducts.length===0
     ? '<div class="empty">Sin productos. Agrega el primero abajo.</div>'
-    : `<table>
-        <tr><th>Imagen</th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Ajustar</th><th></th></tr>`
+    : `<table><tr><th>Imagen</th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Ajustar</th><th></th></tr>`
       + cachedProducts.map(p => {
-          const stock = p.stock !== undefined ? p.stock : '–';
-          const stockBadge = p.stock <= 0 ? 'badge-red' : p.stock <= 3 ? 'badge-amber' : 'badge-green';
+          const stockBadge = p.stock<=0?'badge-red':p.stock<=3?'badge-amber':'badge-green';
           return `<tr>
             <td>${p.img
-              ? `<img src="${p.img}" style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid #e8e8e2;" onerror="this.style.display='none'"/>`
-              : `<div style="width:44px;height:44px;border-radius:8px;background:#f0f0ea;display:flex;align-items:center;justify-content:center;font-size:18px;">🛒</div>`
+              ?`<img src="${p.img}" style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid #e8e8e2;" onerror="this.style.display='none'"/>`
+              :`<div style="width:44px;height:44px;border-radius:8px;background:#f0f0ea;display:flex;align-items:center;justify-content:center;font-size:18px;">🛒</div>`
             }</td>
             <td style="font-weight:600;">${p.name}</td>
             <td style="color:#aaa;">${p.cat}</td>
             <td style="color:#1D9E75;font-weight:700;">${fmt(p.price)}</td>
-            <td><span class="badge ${stockBadge}">${stock}</span></td>
+            <td><span class="badge ${stockBadge}">${p.stock!==undefined?p.stock:'–'}</span></td>
             <td>
               <div style="display:flex;align-items:center;gap:4px;">
                 <input type="number" id="adj-${p.id}" value="0" style="width:55px;padding:4px 6px;font-size:12px;border:1px solid #e0e0da;border-radius:6px;background:#fafaf8;color:#1a1a1a;outline:none;"/>
@@ -464,18 +543,18 @@ function renderCliente() {
     : cachedProducts.map(p => {
         const agotado = (p.stock !== undefined && p.stock <= 0);
         return `<div class="product-card${agotado?' agotado':''}">
-          ${agotado ? '<div class="agotado-banner">AGOTADO</div>' : ''}
+          ${agotado?'<div class="agotado-banner">AGOTADO</div>':''}
           ${p.img
-            ? `<img class="product-img" src="${p.img}" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/><div class="product-img-placeholder" style="display:none;">🛒</div>`
-            : `<div class="product-img-placeholder">🛒</div>`
+            ?`<img class="product-img" src="${p.img}" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/><div class="product-img-placeholder" style="display:none;">🛒</div>`
+            :`<div class="product-img-placeholder">🛒</div>`
           }
           <div class="product-info">
             <div class="product-cat">${p.cat}</div>
             <div class="product-name">${p.name}</div>
             <div class="product-price">${fmt(p.price)}</div>
             ${agotado
-              ? `<div style="font-size:12px;color:#a32d2d;font-weight:600;margin-top:4px;">No disponible</div>`
-              : `<div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+              ?`<div style="font-size:12px;color:#a32d2d;font-weight:600;margin-top:4px;">No disponible</div>`
+              :`<div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
                   <input type="number" id="qty-${p.id}" value="1" min="1" max="${p.stock||999}"
                     style="width:52px;padding:6px 8px;font-size:13px;border:1px solid #e0e0da;border-radius:8px;background:#fafaf8;color:#1a1a1a;outline:none;"/>
                   <button class="btn-add" style="flex:1;padding:7px 10px;font-size:12px;"
@@ -490,8 +569,8 @@ function renderCliente() {
 
 function renderClientPurchases() {
   if (!currentUser) return;
-  const mp    = getMonthPurchases().filter(p => p.userId === currentUser.id);
-  const total = clientDebt(currentUser.id);
+  const mp    = cachedPurchases.filter(p => p.userId === currentUser.id);
+  const total = clientDebtOf(currentUser.id, cachedPurchases);
   const list  = document.getElementById('client-purchases-list');
   list.innerHTML = mp.length===0
     ? '<div class="empty">No has registrado compras este mes</div>'
@@ -519,29 +598,21 @@ function addPurchase(productId) {
   const pr = getProduct(productId);
   if (!pr) return;
   const qty = parseInt(document.getElementById('qty-'+productId)?.value)||1;
-
-  // Verificar stock suficiente
   if (pr.stock !== undefined && qty > pr.stock) {
     const al = document.getElementById('client-alert');
     al.innerHTML = `<div class="alert alert-error">Solo hay ${pr.stock} unidades disponibles</div>`;
     setTimeout(()=>al.innerHTML='',3000);
     return;
   }
-
   const batch = db.batch();
-  // Registrar compra
   const purchaseRef = db.collection('purchases').doc();
-  batch.set(purchaseRef, {userId:currentUser.id, productId, qty, date:todayStr, monthKey});
-  // Descontar stock
+  batch.set(purchaseRef, {userId:currentUser.id, productId, qty, date:todayStr, monthKey:currentMonthKey});
   if (pr.stock !== undefined) {
     batch.update(db.collection('products').doc(productId), {stock: pr.stock - qty});
   }
   batch.commit().then(() => {
-    // Actualizar caché local
     const idx = cachedProducts.findIndex(p => p.id === productId);
-    if (idx !== -1 && cachedProducts[idx].stock !== undefined) {
-      cachedProducts[idx].stock -= qty;
-    }
+    if (idx !== -1 && cachedProducts[idx].stock !== undefined) cachedProducts[idx].stock -= qty;
     const al = document.getElementById('client-alert');
     al.innerHTML = `<div class="alert alert-success">✓ ${pr.name} ×${qty} agregado a tu cuenta</div>`;
     setTimeout(()=>al.innerHTML='',2500);
@@ -553,7 +624,6 @@ function deleteMyPurchase(id, productId, qty) {
   const pr = getProduct(productId);
   const batch = db.batch();
   batch.delete(db.collection('purchases').doc(id));
-  // Devolver stock
   if (pr && pr.stock !== undefined) {
     batch.update(db.collection('products').doc(productId), {stock: pr.stock + qty});
   }
@@ -570,7 +640,6 @@ function adminDelPurchase(id, productId, qty) {
   const pr = getProduct(productId);
   const batch = db.batch();
   batch.delete(db.collection('purchases').doc(id));
-  // Devolver stock al eliminar desde admin
   if (pr && pr.stock !== undefined) {
     batch.update(db.collection('products').doc(productId), {stock: pr.stock + qty});
   }
@@ -579,7 +648,6 @@ function adminDelPurchase(id, productId, qty) {
       const idx = cachedProducts.findIndex(p => p.id === productId);
       if (idx !== -1) cachedProducts[idx].stock += qty;
     }
-    renderAdmin();
   });
 }
 
@@ -609,10 +677,9 @@ function addClient() {
   if (cachedUsers.find(u=>u.username===username)) { msg.textContent='Ese usuario ya existe'; return; }
   if (password.length < 6)                        { msg.textContent='La contraseña debe tener mínimo 6 caracteres'; return; }
   btn.disabled=true; btn.textContent='Creando...'; msg.textContent='';
-  const email = username + CLIENT_DOMAIN;
-  secAuth.createUserWithEmailAndPassword(email, password)
+  secAuth.createUserWithEmailAndPassword(username+CLIENT_DOMAIN, password)
     .then(cred => {
-      const newUser = {id:cred.user.uid, name, username, role:'cliente', email};
+      const newUser = {id:cred.user.uid, name, username, role:'cliente', email:username+CLIENT_DOMAIN};
       return db.collection('users').doc(cred.user.uid).set(newUser)
         .then(() => secAuth.signOut())
         .then(() => {
@@ -620,21 +687,20 @@ function addClient() {
           document.getElementById('nc-name').value='';
           document.getElementById('nc-user').value='';
           document.getElementById('nc-pass').value='';
-          msg.style.color = '#2d6a11';
-          msg.textContent = '✓ Cliente "'+name+'" creado correctamente';
+          msg.style.color='#2d6a11';
+          msg.textContent='✓ Cliente "'+name+'" creado correctamente';
           setTimeout(()=>msg.textContent='',3000);
           renderAdmin();
         });
     })
     .catch(e => {
-      if (e.code==='auth/email-already-in-use') msg.textContent='Ese usuario ya existe en el sistema';
-      else msg.textContent='Error: '+e.message;
+      msg.textContent = e.code==='auth/email-already-in-use' ? 'Ese usuario ya existe' : 'Error: '+e.message;
     })
     .finally(() => { btn.disabled=false; btn.textContent='+ Agregar'; });
 }
 
 function deleteClient(id) {
-  if (!confirm('¿Eliminar este cliente y todas sus compras del mes?')) return;
+  if (!confirm('¿Eliminar este cliente y todas sus compras?')) return;
   const toDel = cachedPurchases.filter(p=>p.userId===id);
   const batch = db.batch();
   toDel.forEach(p => batch.delete(db.collection('purchases').doc(p.id)));
@@ -649,27 +715,23 @@ function addProduct() {
   const name  = document.getElementById('np-name').value.trim();
   const price = parseFloat(document.getElementById('np-price').value);
   const cat   = document.getElementById('np-cat').value.trim();
-  const stock = parseInt(document.getElementById('np-stock').value) || 0;
+  const stock = parseInt(document.getElementById('np-stock').value)||0;
   const img   = document.getElementById('np-img').value.trim();
   const err   = document.getElementById('add-prod-error');
   const btn   = document.getElementById('btn-add-prod');
   if (!name||!price||!cat) { err.textContent='Completa nombre, precio y categoría'; return; }
   btn.disabled=true; btn.textContent='Guardando...';
   const id   = uid();
-  const data = {id, name, price, cat, stock};
+  const data = {id,name,price,cat,stock};
   if (img) data.img = img;
   db.collection('products').doc(id).set(data)
     .then(() => {
       cachedProducts.push(data);
       err.textContent='';
-      document.getElementById('np-name').value='';
-      document.getElementById('np-price').value='';
-      document.getElementById('np-cat').value='';
-      document.getElementById('np-stock').value='';
-      document.getElementById('np-img').value='';
+      ['np-name','np-price','np-cat','np-stock','np-img'].forEach(i=>document.getElementById(i).value='');
       renderAdmin();
     })
-    .finally(() => { btn.disabled=false; btn.textContent='+ Agregar'; });
+    .finally(()=>{ btn.disabled=false; btn.textContent='+ Agregar'; });
 }
 
 function deleteProduct(id) {
