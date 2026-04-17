@@ -491,8 +491,12 @@
       <button class="tab"        id="tbtn-miscuentas" onclick="showClientTab('miscuentas')">Mis compras</button>
     </div>
     <div id="tab-catalogo" class="tab-content active">
+      <div class="search-box" style="margin-bottom:12px;">
+        <input type="text" id="client-prod-search" placeholder="🔍 Buscar producto..." oninput="filterClientProducts()"/>
+      </div>
       <div id="client-alert"></div>
       <div class="product-grid" id="client-product-grid"></div>
+      <div id="client-no-results" style="display:none;" class="empty">No se encontraron productos</div>
     </div>
     <div id="tab-miscuentas" class="tab-content">
       <div class="card">
@@ -559,7 +563,12 @@ function syncTopbarRow2(){
 
 function doLogout(){if(unsubPurchases){unsubPurchases();unsubPurchases=null;}if(unsubView){unsubView();unsubView=null;}currentUser=null;mainAuth.signOut();}
 function showAdminTab(t){["clientes","compras","productos"].forEach(x=>{document.getElementById("tab-"+x).classList.toggle("active",x===t);document.getElementById("tbtn-"+x).classList.toggle("active",x===t);});}
-function showClientTab(t){["catalogo","miscuentas"].forEach(x=>{document.getElementById("tab-"+x).classList.toggle("active",x===t);document.getElementById("tbtn-"+x).classList.toggle("active",x===t);});if(t==="miscuentas")renderClientPurchases();}
+function showClientTab(t){["catalogo","miscuentas"].forEach(x=>{document.getElementById("tab-"+x).classList.toggle("active",x===t);document.getElementById("tbtn-"+x).classList.toggle("active",x===t);
+  if(t==="catalogo"){
+    const s=document.getElementById("client-prod-search");
+    if(s){s.value="";filterClientProducts();}
+  }
+});if(t==="miscuentas")renderClientPurchases();}
 const getProduct=id=>cachedProducts.find(p=>p.id===id);
 const clientDebtOf=(uid,purchases)=>purchases.filter(p=>p.userId===uid).reduce((s,p)=>{const pr=getProduct(p.productId);return s+(pr?pr.price*p.qty:0);},0);
 function renderAdmin(){
@@ -768,6 +777,21 @@ function adminDelPurchase(id,productId,qty){const pr=getProduct(productId),batch
 let _editProductId = null;
 
 // ── Búsqueda de productos ────────────────────────────────────
+function filterClientProducts(){
+  const q = document.getElementById("client-prod-search")?.value.trim().toLowerCase() || "";
+  const cards = document.querySelectorAll("#client-product-grid .product-card");
+  let visible = 0;
+  cards.forEach(card => {
+    const name = card.querySelector(".product-name")?.textContent.toLowerCase() || "";
+    const cat  = card.querySelector(".product-cat")?.textContent.toLowerCase()  || "";
+    const show = !q || name.includes(q) || cat.includes(q);
+    card.style.display = show ? "" : "none";
+    if(show) visible++;
+  });
+  const noResults = document.getElementById("client-no-results");
+  if(noResults) noResults.style.display = (visible === 0 && q) ? "" : "none";
+}
+
 function filterProducts(){
   const q = document.getElementById("prod-search").value.trim().toLowerCase();
   const rows = document.querySelectorAll("#admin-products-list table tbody tr");
