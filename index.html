@@ -128,6 +128,12 @@
   /* ── PURCHASE LIST ── */
   .purchase-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--gray-bg);}
   .purchase-row:last-child{border-bottom:none;}
+  .purchase-row.locked{background:var(--gray-bg);border-radius:8px;padding:10px 12px;margin-bottom:2px;opacity:.75;}
+  .locked-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#2d6a11;background:#EAF3DE;padding:3px 8px;border-radius:999px;}
+  .payment-divider{display:flex;align-items:center;gap:8px;margin:10px 0 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+  .payment-divider.paid{color:#2d6a11;}
+  .payment-divider.pending{color:var(--warn);}
+  .payment-divider hr{flex:1;border:none;border-top:1.5px dashed currentColor;opacity:.4;}
 
   /* ── TOTAL BAR ── */
   .total-bar{background:linear-gradient(135deg,var(--dark),var(--blue));border-radius:14px;padding:16px 1.5rem;display:flex;align-items:center;justify-content:space-between;margin-top:16px;}
@@ -503,16 +509,43 @@ function renderCliente(){
 }
 function renderClientPurchases(){
   if(!currentUser)return;
-  const mp=cachedPurchases.filter(p=>p.userId===currentUser.id),total=clientDebtOf(currentUser.id,cachedPurchases);
+  const mp=cachedPurchases.filter(p=>p.userId===currentUser.id).sort((a,b)=>a.date>b.date?1:-1);
+  const total=clientDebtOf(currentUser.id,cachedPurchases);
+  const myPayments=cachedPayments.filter(p=>p.userId===currentUser.id).sort((a,b)=>a.paidAt>b.paidAt?1:-1);
   const list=document.getElementById("client-purchases-list");
-  list.innerHTML=mp.length===0?`<div class="empty">No has registrado compras este mes</div>`:
-    mp.map(p=>{const pr=getProduct(p.productId);
-      return `<div class="purchase-row">
-        <div><div style="font-size:13px;font-weight:700;">${pr?pr.name:"Producto eliminado"}</div><div style="font-size:12px;color:var(--gray-muted);margin-top:2px;">Cantidad: ${p.qty} · ${p.date}</div></div>
-        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:14px;font-weight:800;color:var(--blue);">${pr?fmt(pr.price*p.qty):"–"}</span>
-        <button class="btn-danger" onclick="deleteMyPurchase('${p.id}','${p.productId}',${p.qty})">×</button></div>
+  if(mp.length===0){list.innerHTML=`<div class="empty">No has registrado compras este mes</div>`;
+    document.getElementById("client-total-bar").innerHTML=`<span class="total-label">Total a pagar · ${MONTHS[currentMonth]}</span><span class="total-val">${fmt(total)}</span>`;return;}
+  // Split purchases into groups: locked (before each payment) and free (after last payment)
+  let groups=[];
+  let remaining=[...mp];
+  myPayments.forEach(pay=>{
+    const before=remaining.filter(p=>p.date<=pay.paidAt);
+    const after=remaining.filter(p=>p.date>pay.paidAt);
+    if(before.length>0)groups.push({items:before,payment:pay,locked:true});
+    remaining=after;
+  });
+  if(remaining.length>0)groups.push({items:remaining,payment:null,locked:false});
+  list.innerHTML=groups.map(g=>{
+    const gTotal=g.items.reduce((s,p)=>{const pr=getProduct(p.productId);return s+(pr?pr.price*p.qty:0);},0);
+    const divider=groups.length>1
+      ?(g.locked
+        ?`<div class="payment-divider paid"><hr/>✓ Pagado el ${g.payment.paidAt} — ${fmt(g.payment.amount)}<hr/></div>`
+        :`<div class="payment-divider pending"><hr/>Pendiente de pago<hr/></div>`)
+      :"";
+    const rows=g.items.map(p=>{const pr=getProduct(p.productId);
+      return `<div class="purchase-row${g.locked?" locked":""}">
+        <div>
+          <div style="font-size:13px;font-weight:700;">${pr?pr.name:"Producto eliminado"}</div>
+          <div style="font-size:12px;color:var(--gray-muted);margin-top:2px;">Cantidad: ${p.qty} · ${p.date}${g.locked?" &nbsp;<span class='locked-badge'>🔒 Pagado</span>":""}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:14px;font-weight:800;color:var(--blue);">${pr?fmt(pr.price*p.qty):"–"}</span>
+          ${g.locked?"":`<button class="btn-danger" onclick="deleteMyPurchase('${p.id}','${p.productId}',${p.qty})">×</button>`}
+        </div>
       </div>`;
     }).join("");
+    return divider+rows+(groups.length>1?`<div style="text-align:right;font-size:12px;font-weight:700;color:var(--gray-muted);padding:4px 0 8px;">Subtotal: ${fmt(gTotal)}</div>`:"");
+  }).join("");
   document.getElementById("client-total-bar").innerHTML=`<span class="total-label">Total a pagar · ${MONTHS[currentMonth]}</span><span class="total-val">${fmt(total)}</span>`;
 }
 function addPurchase(productId){
