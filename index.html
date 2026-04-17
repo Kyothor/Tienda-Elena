@@ -597,15 +597,40 @@ function addClient(){
   if(cachedUsers.find(u=>u.username===username)){msg.textContent="Ese usuario ya existe";return;}
   if(password.length<6){msg.textContent="La contraseña debe tener mínimo 6 caracteres";return;}
   btn.disabled=true;btn.textContent="Creando...";msg.textContent="";
-  secAuth.createUserWithEmailAndPassword(username+CLIENT_DOMAIN,password).then(cred=>{
-    const newUser={id:cred.user.uid,name,username,role:"cliente",email:username+CLIENT_DOMAIN};
-    return db.collection("users").doc(cred.user.uid).set(newUser).then(()=>secAuth.signOut()).then(()=>{
-      cachedUsers.push(newUser);
-      ["nc-name","nc-user","nc-pass"].forEach(i=>document.getElementById(i).value="");
-      msg.style.color="var(--success)";msg.textContent="✓ Cliente \""+name+"\" creado correctamente";
-      setTimeout(()=>msg.textContent="",3000);renderAdmin();});
-  }).catch(e=>{msg.textContent=e.code==="auth/email-already-in-use"?"Ese usuario ya existe":"Error: "+e.message;})
-  .finally(()=>{btn.disabled=false;btn.textContent="+ Agregar";});
+  const email=username+CLIENT_DOMAIN;
+  // Try to create — if email already exists in Auth (deleted client), sign in to get UID and reuse it
+  secAuth.createUserWithEmailAndPassword(email,password)
+    .catch(e=>{
+      if(e.code==="auth/email-already-in-use"){
+        // Account exists in Auth but not in Firestore — sign in to recover the UID
+        return secAuth.signInWithEmailAndPassword(email,password)
+          .catch(()=>{
+            // Wrong password for existing account — update password via re-auth not possible from client
+            // Show helpful message
+            throw new Error("El usuario ya existió antes. Para reactivarlo usa exactamente la misma contraseña que tenía, o contacta al administrador del sistema.");
+          });
+      }
+      throw e;
+    })
+    .then(cred=>{
+      const newUser={id:cred.user.uid,name,username,role:"cliente",email};
+      return db.collection("users").doc(cred.user.uid).set(newUser)
+        .then(()=>secAuth.signOut())
+        .then(()=>{
+          cachedUsers.push(newUser);
+          ["nc-name","nc-user","nc-pass"].forEach(i=>document.getElementById(i).value="");
+          msg.style.color="var(--success)";msg.textContent="✓ Cliente \""+name+"\" creado correctamente";
+          setTimeout(()=>msg.textContent="",3000);renderAdmin();
+        });
+    })
+    .catch(e=>{
+      if(e.message&&e.message.startsWith("El usuario ya existió")){
+        msg.textContent=e.message;
+      } else {
+        msg.textContent="Error: "+e.message;
+      }
+    })
+    .finally(()=>{btn.disabled=false;btn.textContent="+ Agregar";});
 }
 let _pagoUserId=null,_pagoUserName=null,_pagoDeudaTotal=0;
 
