@@ -212,13 +212,15 @@
     .topbar-row2{
       display:flex;
       align-items:center;
-      justify-content:space-between;
+      gap:6px;
       width:100%;
       padding-top:6px;
       border-top:1px solid rgba(255,255,255,.2);
+      flex-wrap:wrap;
     }
-    .topbar-row2-title{font-size:12px;font-weight:800;color:#fff;}
-    .topbar-row2-sub{font-size:10px;color:rgba(255,255,255,.7);}
+    .topbar-row2-title{font-size:12px;font-weight:800;color:#fff;white-space:nowrap;}
+    .topbar-row2-sep{color:rgba(255,255,255,.4);font-size:11px;}
+    .topbar-row2-sub{font-size:11px;color:rgba(255,255,255,.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .topbar-mobile-row2{
       display:flex;
       align-items:center;
@@ -372,7 +374,8 @@
     </div>
     <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
     <div class="topbar-row2">
-      <span class="topbar-row2-title">Tienda Elena — Admin</span>
+      <span class="topbar-row2-title">Tienda Elena</span>
+      <span class="topbar-row2-sep">·</span>
       <span class="topbar-row2-sub" id="admin-month-label-2"></span>
     </div>
   </div>
@@ -457,6 +460,7 @@
     <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
     <div class="topbar-row2">
       <span class="topbar-row2-title">Tienda Elena</span>
+      <span class="topbar-row2-sep">·</span>
       <span class="topbar-row2-sub" id="client-welcome-2"></span>
     </div>
   </div>
