@@ -69,7 +69,7 @@
   /* ── TABS ── */
   .tabs{display:flex;gap:4px;margin-bottom:22px;background:#fff;border-radius:12px;padding:5px;border:1px solid var(--gray-border);}
   .tab{flex:1;padding:8px 10px;font-size:13px;cursor:pointer;color:var(--gray-muted);background:transparent;border:none;border-radius:8px;font-weight:700;font-family:'Nunito',sans-serif;transition:all .2s;}
-  .tab.active{color:#fff;background:linear-gradient(135deg,var(--blue),var(--blue-light));box-shadow:0 2px 8px rgba(27,62,122,.3);}
+  .tab.active{color:var(--dark);background:linear-gradient(135deg,#F5A623,#f7c464);box-shadow:0 2px 8px rgba(245,166,35,.35);}
   .tab-content{display:none;}
   .tab-content.active{display:block;}
 
@@ -101,9 +101,9 @@
   /* ── FORMS ── */
   .form-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
   .form-row .field{flex:1;margin-bottom:0;min-width:110px;}
-  .btn-add{padding:11px 18px;font-size:13px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--blue-light));color:#fff;cursor:pointer;font-weight:700;white-space:nowrap;font-family:'Nunito',sans-serif;transition:opacity .2s;}
-  .btn-add:hover{opacity:.9;}
-  .btn-add:disabled{background:#aaa;cursor:not-allowed;}
+  .btn-add{padding:11px 18px;font-size:13px;border:none;border-radius:10px;background:linear-gradient(135deg,#F5A623,#f7c464);color:var(--dark);cursor:pointer;font-weight:800;white-space:nowrap;font-family:'Nunito',sans-serif;transition:opacity .2s,transform .1s;}
+  .btn-add:hover{opacity:.9;transform:translateY(-1px);}
+  .btn-add:disabled{background:#ddd;color:#aaa;cursor:not-allowed;}
   .btn-danger{padding:5px 11px;font-size:12px;border:1.5px solid #f0c0c0;border-radius:8px;background:#fff;color:var(--danger);cursor:pointer;font-weight:700;font-family:'Nunito',sans-serif;}
   .btn-danger:hover{background:var(--danger-bg);}
   .btn-stock{padding:5px 11px;font-size:12px;border:1.5px solid var(--gray-border);border-radius:8px;background:#fff;color:var(--gray-text);cursor:pointer;font-weight:700;font-family:'Nunito',sans-serif;}
@@ -150,6 +150,11 @@
   .client-block:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
   .client-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
   .agotado-banner{background:var(--danger);color:#fff;font-size:11px;font-weight:800;text-align:center;padding:5px;letter-spacing:.8px;}
+  .btn-pagado{padding:5px 12px;font-size:12px;border:none;border-radius:8px;background:#EAF3DE;color:#2d6a11;cursor:pointer;font-weight:700;font-family:'Nunito',sans-serif;transition:all .2s;}
+  .btn-pagado:hover{background:#c8e6b0;}
+  .btn-pagado.pendiente{background:var(--warn-bg);color:var(--warn);}
+  .pagado-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#EAF3DE;color:#2d6a11;}
+  .pagado-badge.pendiente{background:var(--warn-bg);color:var(--warn);}
   .month-selector{display:flex;align-items:center;gap:10px;margin-bottom:18px;background:#fff;border:1px solid var(--gray-border);border-radius:12px;padding:12px 16px;}
   .month-selector label{font-size:12px;color:var(--gray-muted);font-weight:700;white-space:nowrap;text-transform:uppercase;letter-spacing:.5px;}
   .month-selector select{flex:1;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray-border);border-radius:8px;background:var(--gray-bg);color:var(--gray-text);outline:none;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:600;}
@@ -333,7 +338,7 @@ const now=new Date(),currentMonth=now.getMonth(),currentYear=now.getFullYear();
 const currentMonthKey=currentYear+"-"+String(currentMonth+1).padStart(2,"0");
 const todayStr=now.toISOString().slice(0,10);
 let viewMonthKey=currentMonthKey;
-let currentUser=null,cachedUsers=[],cachedProducts=[],cachedPurchases=[],viewPurchases=[],unsubPurchases=null,unsubView=null;
+let currentUser=null,cachedUsers=[],cachedProducts=[],cachedPurchases=[],viewPurchases=[],cachedPayments=[],viewPayments=[],unsubPurchases=null,unsubView=null,unsubPayments=null,unsubViewPayments=null;
 const fmt=n=>"$"+Math.round(n).toLocaleString("es-CO");
 const initials=n=>n.trim().split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -346,9 +351,19 @@ function isCurrentMonth(){return viewMonthKey===currentMonthKey;}
 function viewMonthLabel(){const[y,m]=viewMonthKey.split("-");return MONTHS[parseInt(m)-1]+" "+y;}
 async function seedProducts(){const s=await db.collection("products").get();if(!s.empty)return;const d=[{id:"p1",name:"Leche entera",price:3200,cat:"Lácteos",stock:10},{id:"p2",name:"Queso campesino",price:8500,cat:"Lácteos",stock:5},{id:"p3",name:"Arroz 1kg",price:4200,cat:"Granos",stock:20},{id:"p4",name:"Aceite 1L",price:9800,cat:"Aceites",stock:8},{id:"p5",name:"Azúcar 1kg",price:3500,cat:"Granos",stock:15},{id:"p6",name:"Jabón de baño",price:2800,cat:"Aseo",stock:12}];for(const p of d)await db.collection("products").doc(p.id).set(p);}
 async function loadAll(){const[u,p]=await Promise.all([db.collection("users").get(),db.collection("products").get()]);cachedUsers=u.docs.map(d=>d.data());cachedProducts=p.docs.map(d=>d.data());}
-function subscribePurchases(cb){if(unsubPurchases){unsubPurchases();unsubPurchases=null;}unsubPurchases=db.collection("purchases").where("monthKey","==",currentMonthKey).onSnapshot(s=>{cachedPurchases=s.docs.map(d=>({id:d.id,...d.data()}));cb();});}
-function loadViewPurchases(){if(unsubView){unsubView();unsubView=null;}unsubView=db.collection("purchases").where("monthKey","==",viewMonthKey).onSnapshot(s=>{viewPurchases=s.docs.map(d=>({id:d.id,...d.data()}));renderAdmin();});}
-mainAuth.onAuthStateChanged(async fbUser=>{if(!fbUser){currentUser=null;if(unsubPurchases){unsubPurchases();unsubPurchases=null;}if(unsubView){unsubView();unsubView=null;}showScreen("screen-login");const b=document.getElementById("btn-login");b.disabled=false;b.textContent="Ingresar";return;}await loadAll();if(fbUser.email===ADMIN_EMAIL){currentUser={id:"admin",name:"Administrador",username:"admin",role:"admin"};}else{const p=cachedUsers.find(u=>toEmail(u.username)===fbUser.email);if(!p){await mainAuth.signOut();return;}currentUser=p;}document.getElementById("btn-login").disabled=false;document.getElementById("btn-login").textContent="Ingresar";document.getElementById("login-error").textContent="";if(currentUser.role==="admin"){populateMonthSelectors();subscribePurchases(()=>{});loadViewPurchases();showScreen("screen-admin");}else{subscribePurchases(renderCliente);renderCliente();showScreen("screen-cliente");}});
+function subscribePurchases(cb){
+  if(unsubPurchases){unsubPurchases();unsubPurchases=null;}
+  unsubPurchases=db.collection("purchases").where("monthKey","==",currentMonthKey).onSnapshot(s=>{cachedPurchases=s.docs.map(d=>({id:d.id,...d.data()}));cb();});
+  if(unsubPayments){unsubPayments();unsubPayments=null;}
+  unsubPayments=db.collection("payments").where("monthKey","==",currentMonthKey).onSnapshot(s=>{cachedPayments=s.docs.map(d=>({id:d.id,...d.data()}));});
+}
+function loadViewPurchases(){
+  if(unsubView){unsubView();unsubView=null;}
+  unsubView=db.collection("purchases").where("monthKey","==",viewMonthKey).onSnapshot(s=>{viewPurchases=s.docs.map(d=>({id:d.id,...d.data()}));renderAdmin();});
+  if(unsubViewPayments){unsubViewPayments();unsubViewPayments=null;}
+  unsubViewPayments=db.collection("payments").where("monthKey","==",viewMonthKey).onSnapshot(s=>{viewPayments=s.docs.map(d=>({id:d.id,...d.data()}));renderAdmin();});
+}
+mainAuth.onAuthStateChanged(async fbUser=>{if(!fbUser){currentUser=null;if(unsubPurchases){unsubPurchases();unsubPurchases=null;}if(unsubView){unsubView();unsubView=null;}if(unsubPayments){unsubPayments();unsubPayments=null;}if(unsubViewPayments){unsubViewPayments();unsubViewPayments=null;}showScreen("screen-login");const b=document.getElementById("btn-login");b.disabled=false;b.textContent="Ingresar";return;}await loadAll();if(fbUser.email===ADMIN_EMAIL){currentUser={id:"admin",name:"Administrador",username:"admin",role:"admin"};}else{const p=cachedUsers.find(u=>toEmail(u.username)===fbUser.email);if(!p){await mainAuth.signOut();return;}currentUser=p;}document.getElementById("btn-login").disabled=false;document.getElementById("btn-login").textContent="Ingresar";document.getElementById("login-error").textContent="";if(currentUser.role==="admin"){populateMonthSelectors();subscribePurchases(()=>{});loadViewPurchases();showScreen("screen-admin");}else{subscribePurchases(renderCliente);renderCliente();showScreen("screen-cliente");}});
 function doLogin(){const u=document.getElementById("login-user").value.trim(),p=document.getElementById("login-pass").value,b=document.getElementById("btn-login"),e=document.getElementById("login-error");if(!u||!p){e.textContent="Completa usuario y contraseña";return;}b.disabled=true;b.textContent="Ingresando...";e.textContent="";mainAuth.signInWithEmailAndPassword(toEmail(u),p).catch(()=>{e.textContent="Usuario o contraseña incorrectos";b.disabled=false;b.textContent="Ingresar";});}
 function doLogout(){if(unsubPurchases){unsubPurchases();unsubPurchases=null;}if(unsubView){unsubView();unsubView=null;}currentUser=null;mainAuth.signOut();}
 function showAdminTab(t){["clientes","compras","productos"].forEach(x=>{document.getElementById("tab-"+x).classList.toggle("active",x===t);document.getElementById("tbtn-"+x).classList.toggle("active",x===t);});}
@@ -374,12 +389,34 @@ function renderAdmin(){
   document.getElementById("add-client-card").style.display=isHist?"none":"block";
   const pl=document.getElementById("admin-purchases-list");
   pl.innerHTML=clients.length===0?`<div class="empty">Sin clientes</div>`:
-    clients.map(c=>{const cmp=purchases.filter(p=>p.userId===c.id),debt=clientDebtOf(c.id,purchases);
-      return `<div class="client-block"><div class="client-header"><div class="initials">${initials(c.name)}</div><span style="font-weight:700;font-size:14px;">${c.name}</span><span class="badge ${debt===0?"badge-green":debt>50000?"badge-red":"badge-amber"}">${fmt(debt)}</span></div>
-      ${cmp.length===0?`<div style="font-size:12px;color:var(--gray-muted);padding-left:46px;">Sin compras en ${lbl}</div>`:
-        `<table style="margin-left:46px;width:calc(100% - 46px);"><tr><th>Producto</th><th>Cant.</th><th>Subtotal</th><th>Fecha</th>${isHist?"":"<th></th>"}</tr>`+
-        cmp.map(p=>{const pr=getProduct(p.productId);return `<tr><td>${pr?pr.name:"–"}</td><td>${p.qty}</td><td>${pr?fmt(pr.price*p.qty):"–"}</td><td style="color:var(--gray-muted);">${p.date}</td>${isHist?"":` <td><button class="btn-danger" onclick="adminDelPurchase('${p.id}','${p.productId}',${p.qty})">×</button></td>`}</tr>`;}).join("")+"</table>"
-      }</div>`;
+    clients.map(c=>{
+      const allPurchases=purchases.filter(p=>p.userId===c.id);
+      const clientPayments=viewPayments.filter(p=>p.userId===c.id).sort((a,b)=>a.paidAt>b.paidAt?1:-1);
+      const debt=clientDebtOf(c.id,purchases);
+      const badge=debt===0?"badge-green":debt>50000?"badge-red":"badge-amber";
+      // Split purchases into groups by payment date
+      let groups=[];
+      let remaining=[...allPurchases].sort((a,b)=>a.date>b.date?1:-1);
+      let groupIdx=0;
+      clientPayments.forEach(pay=>{
+        const before=remaining.filter(p=>p.date<=pay.paidAt);
+        const after=remaining.filter(p=>p.date>pay.paidAt);
+        if(before.length>0) groups.push({purchases:before,payment:pay,idx:groupIdx++});
+        remaining=after;
+      });
+      if(remaining.length>0) groups.push({purchases:remaining,payment:null,idx:groupIdx++});
+      const groupsHtml=groups.length===0?`<div style="font-size:12px;color:var(--gray-muted);padding-left:46px;">Sin compras en ${lbl}</div>`:
+        groups.map(g=>{
+          const gDebt=g.purchases.reduce((s,p)=>{const pr=getProduct(p.productId);return s+(pr?pr.price*p.qty:0);},0);
+          const isPaid=!!g.payment;
+          return `<div style="margin-left:46px;margin-bottom:10px;">
+            ${groups.length>1?`<div style="font-size:11px;font-weight:700;color:${isPaid?"#2d6a11":"var(--warn)"};margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">${isPaid?"✓ Pagado el "+g.payment.paidAt+" — "+fmt(g.payment.amount):"⏳ Pendiente de pago"}</div>`:""}
+            <table style="width:100%;"><tr><th>Producto</th><th>Cant.</th><th>Subtotal</th><th>Fecha</th>${isHist?"":"<th></th>"}</tr>`+
+            g.purchases.map(p=>{const pr=getProduct(p.productId);return `<tr><td>${pr?pr.name:"–"}</td><td>${p.qty}</td><td>${pr?fmt(pr.price*p.qty):"–"}</td><td style="color:var(--gray-muted);">${p.date}</td>${isHist?"":` <td><button class="btn-danger" onclick="adminDelPurchase('${p.id}','${p.productId}',${p.qty})">×</button></td>`}</tr>`;}).join("")+
+            `</table><div style="text-align:right;font-size:13px;font-weight:700;color:var(--blue);padding-top:4px;">Subtotal: ${fmt(gDebt)}</div></div>`;
+        }).join("");
+      return `<div class="client-block"><div class="client-header"><div class="initials">${initials(c.name)}</div><span style="font-weight:700;font-size:14px;">${c.name}</span><span class="badge ${badge}">${fmt(debt)}</span>${!isHist&&clientPayments.length>0?`<span class="pagado-badge">✓ ${clientPayments.length} pago(s) registrado(s)</span>`:""}</div>
+      ${groupsHtml}</div>`;
     }).join("");
   const pt=document.getElementById("admin-products-list");
   pt.innerHTML=cachedProducts.length===0?`<div class="empty">Sin productos</div>`:
@@ -462,6 +499,20 @@ function addClient(){
   }).catch(e=>{msg.textContent=e.code==="auth/email-already-in-use"?"Ese usuario ya existe":"Error: "+e.message;})
   .finally(()=>{btn.disabled=false;btn.textContent="+ Agregar";});
 }
+function marcarPagado(userId, userName, amount){
+  if(!confirm(`¿Marcar como pagado el saldo de ${userName}?\nMonto: ${fmt(amount)}\n\nDespués de esto, las nuevas compras del cliente comenzarán una cuenta nueva en el mismo mes.`)) return;
+  const paidAt=new Date().toISOString().slice(0,10);
+  db.collection("payments").add({userId,monthKey:viewMonthKey,amount,paidAt,name:userName})
+    .then(()=>{
+      const al=document.createElement("div");
+      al.className="alert alert-success";
+      al.style.cssText="position:fixed;top:70px;right:20px;z-index:999;min-width:280px;box-shadow:0 4px 16px rgba(0,0,0,.15);";
+      al.textContent="✓ Pago de "+userName+" registrado — "+fmt(amount);
+      document.body.appendChild(al);
+      setTimeout(()=>al.remove(),3000);
+    });
+}
+
 function deleteClient(id){
   if(!confirm("¿Eliminar este cliente y todas sus compras?"))return;
   const toDel=cachedPurchases.filter(p=>p.userId===id),batch=db.batch();
