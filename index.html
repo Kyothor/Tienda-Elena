@@ -478,8 +478,26 @@ function renderAdmin(){
             g.purchases.map(p=>{const pr=getProduct(p.productId);return `<tr><td>${pr?pr.name:"–"}</td><td>${p.qty}</td><td>${pr?fmt(pr.price*p.qty):"–"}</td><td style="color:var(--gray-muted);">${p.date}</td>${isHist?"":` <td><button class="btn-danger" onclick="adminDelPurchase('${p.id}','${p.productId}',${p.qty})">×</button></td>`}</tr>`;}).join("")+
             `</table><div style="text-align:right;font-size:13px;font-weight:700;color:var(--blue);padding-top:4px;">Subtotal: ${fmt(gDebt)}</div></div>`;
         }).join("");
-      return `<div class="client-block"><div class="client-header"><div class="initials">${initials(c.name)}</div><span style="font-weight:700;font-size:14px;">${c.name}</span><span class="badge ${badge}">${fmt(debt)}</span>${!isHist&&clientPayments.length>0?`<span class="pagado-badge">✓ ${clientPayments.length} pago(s) registrado(s)</span>`:""}</div>
-      ${groupsHtml}</div>`;
+      // Payments panel — always show registered payments with delete button
+      const paymentsPanel=clientPayments.length===0?"":
+        `<div style="margin-left:46px;margin-top:10px;padding:10px 14px;background:var(--gray-bg);border-radius:10px;">
+          <div style="font-size:11px;font-weight:700;color:var(--gray-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Pagos registrados este mes</div>
+          ${clientPayments.map(pay=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-border);">
+              <div>
+                <span style="font-size:13px;font-weight:700;color:#2d6a11;">✓ ${fmt(pay.amount)}</span>
+                <span style="font-size:12px;color:var(--gray-muted);margin-left:8px;">${pay.paidAt}</span>
+              </div>
+              ${isHist?"":` <button class="btn-danger" style="font-size:11px;padding:3px 10px;" onclick="eliminarPago('${pay.id}','${c.name}',${pay.amount})">Eliminar pago</button>`}
+            </div>`).join("")}
+          <div style="text-align:right;font-size:12px;font-weight:700;color:var(--blue);padding-top:6px;">
+            Total pagado: ${fmt(clientPayments.reduce((s,p)=>s+p.amount,0))}
+          </div>
+        </div>`;
+
+      return `<div class="client-block"><div class="client-header"><div class="initials">${initials(c.name)}</div><span style="font-weight:700;font-size:14px;">${c.name}</span><span class="badge ${badge}">${fmt(debt)}</span>${!isHist&&clientPayments.length>0?`<span class="pagado-badge">✓ ${clientPayments.length} pago(s)</span>`:""}</div>
+      ${groupsHtml}
+      ${paymentsPanel}</div>`;
     }).join("");
   const pt=document.getElementById("admin-products-list");
   pt.innerHTML=cachedProducts.length===0?`<div class="empty">Sin productos</div>`:
