@@ -525,6 +525,17 @@ function loadViewPurchases(){
 }
 mainAuth.onAuthStateChanged(async fbUser=>{if(!fbUser){currentUser=null;if(unsubPurchases){unsubPurchases();unsubPurchases=null;}if(unsubView){unsubView();unsubView=null;}if(unsubPayments){unsubPayments();unsubPayments=null;}if(unsubViewPayments){unsubViewPayments();unsubViewPayments=null;}showScreen("screen-login");const b=document.getElementById("btn-login");b.disabled=false;b.textContent="Ingresar";return;}await loadAll();if(fbUser.email===ADMIN_EMAIL){currentUser={id:"admin",name:"Administrador",username:"admin",role:"admin"};}else{const p=cachedUsers.find(u=>toEmail(u.username)===fbUser.email);if(!p){await mainAuth.signOut();document.getElementById("login-error").textContent="Usuario o contraseña incorrectos";document.getElementById("btn-login").disabled=false;document.getElementById("btn-login").textContent="Ingresar";return;}currentUser=p;}document.getElementById("btn-login").disabled=false;document.getElementById("btn-login").textContent="Ingresar";document.getElementById("login-error").textContent="";if(currentUser.role==="admin"){populateMonthSelectors();subscribePurchases(()=>{});loadViewPurchases();showScreen("screen-admin");}else{subscribePurchases(renderCliente);renderCliente();showScreen("screen-cliente");}});
 function doLogin(){const u=document.getElementById("login-user").value.trim(),p=document.getElementById("login-pass").value,b=document.getElementById("btn-login"),e=document.getElementById("login-error");if(!u||!p){e.textContent="Completa usuario y contraseña";return;}b.disabled=true;b.textContent="Ingresando...";e.textContent="";mainAuth.signInWithEmailAndPassword(toEmail(u),p).catch(()=>{e.textContent="Usuario o contraseña incorrectos";b.disabled=false;b.textContent="Ingresar";});}
+function syncTopbarRow2(){
+  // Copy text from desktop labels to mobile row2
+  const src1 = document.getElementById("admin-month-label");
+  const dst1 = document.getElementById("admin-month-label-2");
+  if(src1 && dst1) dst1.textContent = src1.textContent;
+
+  const src2 = document.getElementById("client-welcome");
+  const dst2 = document.getElementById("client-welcome-2");
+  if(src2 && dst2) dst2.textContent = src2.textContent;
+}
+
 function doLogout(){if(unsubPurchases){unsubPurchases();unsubPurchases=null;}if(unsubView){unsubView();unsubView=null;}currentUser=null;mainAuth.signOut();}
 function showAdminTab(t){["clientes","compras","productos"].forEach(x=>{document.getElementById("tab-"+x).classList.toggle("active",x===t);document.getElementById("tbtn-"+x).classList.toggle("active",x===t);});}
 function showClientTab(t){["catalogo","miscuentas"].forEach(x=>{document.getElementById("tab-"+x).classList.toggle("active",x===t);document.getElementById("tbtn-"+x).classList.toggle("active",x===t);});if(t==="miscuentas")renderClientPurchases();}
@@ -534,6 +545,7 @@ function renderAdmin(){
   const isHist=!isCurrentMonth(),lbl=viewMonthLabel(),purchases=viewPurchases,clients=cachedUsers.filter(u=>u.role==="cliente"),totalDebt=clients.reduce((s,c)=>s+clientDebtOf(c.id,purchases),0);
   document.getElementById("admin-month-label").textContent=lbl;
   const lbl2=document.getElementById("admin-month-label-2");if(lbl2)lbl2.textContent=lbl;
+  syncTopbarRow2();
   if(document.getElementById("admin-month-label-mobile"))document.getElementById("admin-month-label-mobile").textContent=lbl;
   if(window.innerWidth<=640&&document.getElementById("topbar-mobile-row2-admin"))document.getElementById("topbar-mobile-row2-admin").style.display="flex";
   const hb=isHist?`<span class="historic-badge">Histórico</span>`:"";
@@ -652,6 +664,8 @@ function renderAdmin(){
 }
 function renderCliente(){
   document.getElementById("client-welcome").textContent="Hola, "+currentUser.name+" · "+MONTHS[currentMonth]+" "+currentYear;
+  const cw2=document.getElementById("client-welcome-2");if(cw2)cw2.textContent="Hola, "+currentUser.name+" · "+MONTHS[currentMonth]+" "+currentYear;
+  syncTopbarRow2();
   document.getElementById("client-month-badge").textContent=MONTHS[currentMonth]+" "+currentYear;
   const grid=document.getElementById("client-product-grid");
   grid.innerHTML=cachedProducts.length===0?`<div class="empty">No hay productos disponibles</div>`:
