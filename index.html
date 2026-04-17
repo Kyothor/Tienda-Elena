@@ -150,11 +150,29 @@
   .client-block:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
   .client-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
   .agotado-banner{background:var(--danger);color:#fff;font-size:11px;font-weight:800;text-align:center;padding:5px;letter-spacing:.8px;}
-  .btn-pagado{padding:5px 12px;font-size:12px;border:none;border-radius:8px;background:#EAF3DE;color:#2d6a11;cursor:pointer;font-weight:700;font-family:'Nunito',sans-serif;transition:all .2s;}
-  .btn-pagado:hover{background:#c8e6b0;}
-  .btn-pagado.pendiente{background:var(--warn-bg);color:var(--warn);}
+  .btn-pagado{padding:5px 14px;font-size:12px;border:none;border-radius:8px;background:linear-gradient(135deg,#F5A623,#f7c464);color:var(--dark);cursor:pointer;font-weight:800;font-family:'Nunito',sans-serif;transition:all .2s;}
+  .btn-pagado:hover{opacity:.9;transform:translateY(-1px);}
   .pagado-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#EAF3DE;color:#2d6a11;}
-  .pagado-badge.pendiente{background:var(--warn-bg);color:var(--warn);}
+  .pagado-badge.parcial{background:var(--warn-bg);color:var(--warn);}
+  .pago-overlay{display:none;position:fixed;inset:0;background:rgba(13,31,60,.55);z-index:200;align-items:center;justify-content:center;}
+  .pago-overlay.open{display:flex;}
+  .pago-modal{background:#fff;border-radius:18px;padding:2rem;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(13,31,60,.3);}
+  .pago-modal h3{font-size:17px;font-weight:800;color:var(--dark);margin-bottom:4px;}
+  .pago-modal .sub{font-size:13px;color:var(--gray-muted);margin-bottom:1.25rem;}
+  .pago-modal .deuda-display{background:var(--gray-bg);border-radius:10px;padding:12px 16px;margin-bottom:1.25rem;display:flex;justify-content:space-between;align-items:center;}
+  .pago-modal .deuda-label{font-size:12px;color:var(--gray-muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+  .pago-modal .deuda-val{font-size:20px;font-weight:800;color:var(--dark);}
+  .pago-modal .field{margin-bottom:1rem;}
+  .pago-modal .field label{display:block;font-size:12px;color:var(--gray-muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;}
+  .pago-modal .field input{width:100%;padding:11px 14px;font-size:16px;font-weight:700;border:2px solid var(--gray-border);border-radius:10px;background:var(--gray-bg);color:var(--dark);outline:none;font-family:'Nunito',sans-serif;}
+  .pago-modal .field input:focus{border-color:#F5A623;}
+  .pago-modal-btns{display:flex;gap:10px;margin-top:1rem;}
+  .pago-modal-btns .btn-cancel{flex:1;padding:11px;border:1.5px solid var(--gray-border);border-radius:10px;background:#fff;color:var(--gray-muted);cursor:pointer;font-weight:700;font-family:'Nunito',sans-serif;}
+  .pago-modal-btns .btn-confirm{flex:2;padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#F5A623,#f7c464);color:var(--dark);cursor:pointer;font-weight:800;font-family:'Nunito',sans-serif;font-size:14px;}
+  .pago-modal-btns .btn-confirm:hover{opacity:.9;}
+  .pago-result{font-size:12px;margin-top:8px;font-weight:700;min-height:16px;}
+  .pago-result.ok{color:#2d6a11;}
+  .pago-result.parcial{color:var(--warn);}
   .month-selector{display:flex;align-items:center;gap:10px;margin-bottom:18px;background:#fff;border:1px solid var(--gray-border);border-radius:12px;padding:12px 16px;}
   .month-selector label{font-size:12px;color:var(--gray-muted);font-weight:700;white-space:nowrap;text-transform:uppercase;letter-spacing:.5px;}
   .month-selector select{flex:1;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray-border);border-radius:8px;background:var(--gray-bg);color:var(--gray-text);outline:none;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:600;}
@@ -388,14 +406,23 @@ function renderAdmin(){
       const badge=debt===0?"badge-green":debt>50000?"badge-red":"badge-amber";
       const clientPayments=viewPayments.filter(p=>p.userId===c.id);
       const paidTotal=clientPayments.reduce((s,p)=>s+p.amount,0);
-      const isPaid=debt>0&&paidTotal>=debt;
+      const pendiente=Math.max(0,debt-paidTotal);
+      const isPaid=debt>0&&pendiente<=0;
+      const isParcial=paidTotal>0&&pendiente>0;
       const statusCell=isHist
-        ?(clientPayments.length>0?`<span class="pagado-badge">✓ Pagado`+fmt(paidTotal)+`</span>`:`<span style="font-size:12px;color:var(--gray-muted);">Sin pago</span>`)
+        ?(clientPayments.length>0
+          ?(pendiente>0
+            ?`<span class="pagado-badge parcial">Parcial — resta `+fmt(pendiente)+`</span>`
+            :`<span class="pagado-badge">✓ Saldado</span>`)
+          :`<span style="font-size:12px;color:var(--gray-muted);">Sin pago</span>`)
         :(debt===0
           ?`<span style="font-size:12px;color:var(--gray-muted);">Sin deuda</span>`
           :(isPaid
-            ?`<span class="pagado-badge">✓ Pagado</span>`
-            :`<button class="btn-pagado pendiente" onclick="marcarPagado('${c.id}','${c.name}',${debt})">Marcar pagado</button>`
+            ?`<span class="pagado-badge">✓ Saldado</span>`
+            :(isParcial
+              ?`<span class="pagado-badge parcial" style="cursor:pointer;" onclick="marcarPagado('${c.id}','${c.name}',${pendiente})">Parcial — resta `+fmt(pendiente)+` · Pago</span>`
+              :`<button class="btn-pagado" onclick="marcarPagado('${c.id}','${c.name}',${debt})">Pago</button>`
+            )
           )
         );
       return `<tr>
@@ -519,18 +546,70 @@ function addClient(){
   }).catch(e=>{msg.textContent=e.code==="auth/email-already-in-use"?"Ese usuario ya existe":"Error: "+e.message;})
   .finally(()=>{btn.disabled=false;btn.textContent="+ Agregar";});
 }
-function marcarPagado(userId, userName, amount){
-  if(!confirm(`¿Marcar como pagado el saldo de ${userName}?\nMonto: ${fmt(amount)}\n\nDespués de esto, las nuevas compras del cliente comenzarán una cuenta nueva en el mismo mes.`)) return;
+let _pagoUserId=null,_pagoUserName=null,_pagoDeudaTotal=0;
+
+function marcarPagado(userId, userName, deudaTotal){
+  _pagoUserId=userId;
+  _pagoUserName=userName;
+  _pagoDeudaTotal=deudaTotal;
+  document.getElementById("pago-modal-title").textContent="Registrar pago — "+userName;
+  document.getElementById("pago-modal-sub").textContent="Ingresa el monto que pagó el cliente. Si pagó menos del total, quedará un saldo pendiente.";
+  document.getElementById("pago-modal-deuda").textContent=fmt(deudaTotal);
+  document.getElementById("pago-input").value="";
+  document.getElementById("pago-result").textContent="";
+  document.getElementById("pago-result").className="pago-result";
+  document.getElementById("pago-overlay").classList.add("open");
+  setTimeout(()=>document.getElementById("pago-input").focus(),100);
+}
+
+function actualizarPagoResult(){
+  const val=parseFloat(document.getElementById("pago-input").value)||0;
+  const res=document.getElementById("pago-result");
+  if(val<=0){res.textContent="";res.className="pago-result";return;}
+  const restante=_pagoDeudaTotal-val;
+  if(restante<=0){
+    res.textContent="✓ Pago total — quedará saldado";
+    res.className="pago-result ok";
+  } else {
+    res.textContent="Saldo pendiente tras el pago: "+fmt(restante);
+    res.className="pago-result parcial";
+  }
+}
+
+function cerrarPagoModal(){
+  document.getElementById("pago-overlay").classList.remove("open");
+  _pagoUserId=null;_pagoUserName=null;_pagoDeudaTotal=0;
+}
+
+function confirmarPago(){
+  const val=parseFloat(document.getElementById("pago-input").value)||0;
+  if(val<=0){document.getElementById("pago-result").textContent="Ingresa un monto válido";document.getElementById("pago-result").className="pago-result parcial";return;}
   const paidAt=new Date().toISOString().slice(0,10);
-  db.collection("payments").add({userId,monthKey:viewMonthKey,amount,paidAt,name:userName})
-    .then(()=>{
-      const al=document.createElement("div");
-      al.className="alert alert-success";
-      al.style.cssText="position:fixed;top:70px;right:20px;z-index:999;min-width:280px;box-shadow:0 4px 16px rgba(0,0,0,.15);";
-      al.textContent="✓ Pago de "+userName+" registrado — "+fmt(amount);
-      document.body.appendChild(al);
-      setTimeout(()=>al.remove(),3000);
-    });
+  const confirmBtn=document.querySelector(".btn-confirm");
+  confirmBtn.disabled=true;confirmBtn.textContent="Guardando...";
+  db.collection("payments").add({
+    userId:_pagoUserId,
+    monthKey:viewMonthKey,
+    amount:val,
+    paidAt,
+    name:_pagoUserName
+  }).then(()=>{
+    cerrarPagoModal();
+    const al=document.createElement("div");
+    al.className="alert alert-success";
+    al.style.cssText="position:fixed;top:70px;right:20px;z-index:999;min-width:300px;box-shadow:0 4px 20px rgba(0,0,0,.15);border-radius:12px;font-family:'Nunito',sans-serif;font-weight:700;";
+    const restante=_pagoDeudaTotal-val;
+    al.textContent=restante>0
+      ?"✓ Pago parcial registrado — Saldo restante: "+fmt(Math.max(0,restante))
+      :"✓ Pago total registrado — "+_pagoUserName+" quedó saldado";
+    document.body.appendChild(al);
+    setTimeout(()=>al.remove(),4000);
+    confirmBtn.disabled=false;confirmBtn.textContent="Confirmar pago";
+  }).catch(()=>{
+    confirmBtn.disabled=false;confirmBtn.textContent="Confirmar pago";
+    document.getElementById("pago-result").textContent="Error al guardar. Intenta de nuevo.";
+    document.getElementById("pago-result").className="pago-result parcial";
+  });
 }
 
 function deleteClient(id){
@@ -552,5 +631,25 @@ function deleteProduct(id){if(!confirm("¿Eliminar este producto?"))return;db.co
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&document.getElementById("screen-login").style.display!=="none")doLogin();});
 (async()=>{try{await seedProducts();await loadAll();}catch(e){console.error("Error:",e);}if(!mainAuth.currentUser)showScreen("screen-login");})();
 </script>
+
+<div class="pago-overlay" id="pago-overlay" onclick="if(event.target===this)cerrarPagoModal()">
+  <div class="pago-modal">
+    <h3 id="pago-modal-title">Registrar pago</h3>
+    <div class="sub" id="pago-modal-sub"></div>
+    <div class="deuda-display">
+      <span class="deuda-label">Deuda pendiente</span>
+      <span class="deuda-val" id="pago-modal-deuda"></span>
+    </div>
+    <div class="field">
+      <label>Monto pagado ($)</label>
+      <input type="number" id="pago-input" placeholder="0" min="0" oninput="actualizarPagoResult()"/>
+    </div>
+    <div class="pago-result" id="pago-result"></div>
+    <div class="pago-modal-btns">
+      <button class="btn-cancel" onclick="cerrarPagoModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="confirmarPago()">Confirmar pago</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
