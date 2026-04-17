@@ -86,6 +86,7 @@
   .metric.accent .metric-val{color:var(--blue);}
 
   /* ── TABLE ── */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
   table{width:100%;border-collapse:collapse;font-size:13px;}
   th{text-align:left;padding:10px 12px;color:var(--gray-muted);font-weight:700;border-bottom:2px solid var(--gray-bg);font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
   td{padding:12px 12px;border-bottom:1px solid var(--gray-bg);color:var(--gray-text);vertical-align:middle;}
@@ -188,12 +189,94 @@
   .ganancia-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.4);}
   .ganancia-card .metric-label{color:rgba(13,31,60,.7);}
   .ganancia-card .metric-val{color:var(--dark);font-size:22px;}
-  @media(max-width:480px){
-    .metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
-    .form-row{flex-direction:column;}
+  @media(max-width:640px){
+    /* Topbar */
+    .topbar{padding:10px 14px;height:auto;flex-wrap:wrap;gap:8px;}
+    .topbar-left{gap:8px;flex:1;min-width:0;}
+    .topbar-logos{gap:8px;}
+    .topbar-logos img{height:16px;}
+    .topbar-logos .sep{height:16px;}
+    .topbar-title{font-size:13px;}
+    .topbar-sub{font-size:10px;}
+    .btn-logout{font-size:11px;padding:5px 10px;}
+
+    /* Content */
+    .content{padding:14px 12px;}
+
+    /* Metrics */
+    .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px;}
+    .metric-val{font-size:18px;}
+    .ganancia-card .metric-val{font-size:16px;}
+
+    /* Tabs */
+    .tabs{padding:4px;gap:3px;}
+    .tab{padding:7px 6px;font-size:12px;}
+
+    /* Cards */
+    .card{padding:.85rem 1rem;}
+
+    /* Tables — scroll horizontal en móvil */
+    .table-wrap{border-radius:8px;}
+    .table-wrap table{min-width:440px;}
+    th{font-size:10px;padding:6px 8px;}
+    td{font-size:12px;padding:8px 8px;}
+
+    /* Client header */
+    .client-header{flex-wrap:wrap;gap:6px;}
+    .initials{width:30px;height:30px;font-size:11px;}
+
+    /* Forms */
+    .form-row{flex-direction:column;gap:8px;}
     .form-row .field{min-width:100%;}
-    .btn-add{width:100%;}
-    .topbar-logos img{height:18px;}
+    .btn-add{width:100%;padding:12px;}
+    .section-title{font-size:14px;}
+
+    /* Month selector */
+    .month-selector{flex-direction:column;align-items:flex-start;gap:6px;padding:10px 12px;}
+    .month-selector select{width:100%;}
+
+    /* Product grid */
+    .product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+    .product-img,.product-img-placeholder{height:100px;}
+    .product-info{padding:10px;}
+    .product-name{font-size:12px;}
+    .product-price{font-size:13px;}
+
+    /* Purchase rows */
+    .purchase-row{flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;}
+    .purchase-row > div:last-child{align-self:flex-end;}
+
+    /* Total bar */
+    .total-bar{flex-direction:column;align-items:flex-start;gap:4px;padding:12px 1rem;}
+    .total-val{font-size:20px;}
+
+    /* Login */
+    .login-logos{gap:14px;padding:1.2rem 1rem;}
+    .login-logos img{height:26px;}
+    .login-form{padding:1.5rem 1.25rem 2rem;}
+    .login-title{font-size:18px;}
+
+    /* Loading */
+    .loading-screen > div:first-child img{height:28px;}
+
+    /* Payment modal */
+    .pago-overlay{align-items:flex-end;padding-bottom:0;}
+    .pago-modal{padding:1.5rem 1.25rem;margin:0;border-radius:18px 18px 0 0;width:100%;max-width:100%;}
+
+    /* Admin badges & buttons in table cells */
+    .btn-danger{font-size:11px;padding:4px 8px;}
+    .badge{font-size:10px;padding:3px 7px;}
+    .pagado-badge{font-size:10px;padding:3px 7px;}
+    .btn-pagado{font-size:11px;padding:5px 10px;}
+
+    /* Purchases per client indentation */
+    .client-block div[style*="margin-left:46px"]{margin-left:0!important;width:100%!important;}
+  }
+
+  @media(max-width:380px){
+    .product-grid{grid-template-columns:1fr;}
+    .tab{font-size:11px;padding:7px 4px;}
+    .metrics{grid-template-columns:1fr;}
   }
 </style>
 </head>
@@ -406,7 +489,7 @@ function renderAdmin(){
      <div class="metric ganancia-card"><div class="metric-label">💰 Ganancia del mes</div><div class="metric-val">${fmt(totalDebt)}</div></div>`;
   const cl=document.getElementById("admin-clients-list");
   cl.innerHTML=clients.length===0?`<div class="empty">Sin clientes registrados</div>`:
-    `<table><tr><th>Cliente</th><th>Usuario</th><th>Deuda ${lbl}</th><th>Estado pago</th><th></th></tr>`+
+    `<div class="table-wrap"><table><tr><th>Cliente</th><th>Usuario</th><th>Deuda ${lbl}</th><th>Estado pago</th><th></th></tr>`+
     clients.map(c=>{
       const debt=clientDebtOf(c.id,purchases);
       const badge=debt===0?"badge-green":debt>50000?"badge-red":"badge-amber";
@@ -438,7 +521,7 @@ function renderAdmin(){
         <td>${statusCell}</td>
         <td>${isHist?"":` <button class="btn-danger" onclick="deleteClient('${c.id}')">Eliminar</button>`}</td>
       </tr>`;
-    }).join("")+"</table>";
+    }).join("")+"</table></div>";
   document.getElementById("add-client-card").style.display=isHist?"none":"block";
   const pl=document.getElementById("admin-purchases-list");
   pl.innerHTML=clients.length===0?`<div class="empty">Sin clientes</div>`:
@@ -501,7 +584,7 @@ function renderAdmin(){
     }).join("");
   const pt=document.getElementById("admin-products-list");
   pt.innerHTML=cachedProducts.length===0?`<div class="empty">Sin productos</div>`:
-    `<table><tr><th>Imagen</th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Ajustar</th><th></th></tr>`+
+    `<div class="table-wrap"><table><tr><th>Imagen</th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Ajustar</th><th></th></tr>`+
     cachedProducts.map(p=>{const sb=p.stock<=0?"badge-red":p.stock<=3?"badge-amber":"badge-green";
       return `<tr><td>${p.img?`<img src="${p.img}" style="width:44px;height:44px;object-fit:cover;border-radius:10px;border:1px solid var(--gray-border);" onerror="this.style.display='none'"/>`:
         `<div style="width:44px;height:44px;border-radius:10px;background:var(--blue-pale);display:flex;align-items:center;justify-content:center;font-size:20px;">🛒</div>`
@@ -509,7 +592,7 @@ function renderAdmin(){
       <td><span class="badge ${sb}">${p.stock!==undefined?p.stock:"–"}</span></td>
       <td><div style="display:flex;align-items:center;gap:4px;"><input type="number" id="adj-${p.id}" value="0" style="width:55px;padding:5px 7px;font-size:12px;border:1.5px solid var(--gray-border);border-radius:8px;background:var(--gray-bg);color:var(--gray-text);outline:none;font-family:'Nunito',sans-serif;"/><button class="btn-stock" onclick="adjustStock('${p.id}')">+/−</button></div></td>
       <td><button class="btn-danger" onclick="deleteProduct('${p.id}')">Eliminar</button></td></tr>`;
-    }).join("")+"</table>";
+    }).join("")+"</table></div>";
 }
 function renderCliente(){
   document.getElementById("client-welcome").textContent="Hola, "+currentUser.name+" · "+MONTHS[currentMonth]+" "+currentYear;
