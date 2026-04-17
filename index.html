@@ -382,9 +382,29 @@ function renderAdmin(){
      <div class="metric ganancia-card"><div class="metric-label">💰 Ganancia del mes</div><div class="metric-val">${fmt(totalDebt)}</div></div>`;
   const cl=document.getElementById("admin-clients-list");
   cl.innerHTML=clients.length===0?`<div class="empty">Sin clientes registrados</div>`:
-    `<table><tr><th>Cliente</th><th>Usuario</th><th>Compras</th><th>Deuda ${lbl}</th><th></th></tr>`+
-    clients.map(c=>{const debt=clientDebtOf(c.id,purchases),badge=debt===0?"badge-green":debt>50000?"badge-red":"badge-amber",compras=purchases.filter(p=>p.userId===c.id).length;
-      return `<tr><td><div style="display:flex;align-items:center;gap:9px;"><div class="initials">${initials(c.name)}</div>${c.name}</div></td><td style="color:var(--gray-muted);">${c.username}</td><td>${compras}</td><td><span class="badge ${badge}">${fmt(debt)}</span></td><td>${isHist?"":` <button class="btn-danger" onclick="deleteClient('${c.id}')">Eliminar</button>`}</td></tr>`;
+    `<table><tr><th>Cliente</th><th>Usuario</th><th>Deuda ${lbl}</th><th>Estado pago</th><th></th></tr>`+
+    clients.map(c=>{
+      const debt=clientDebtOf(c.id,purchases);
+      const badge=debt===0?"badge-green":debt>50000?"badge-red":"badge-amber";
+      const clientPayments=viewPayments.filter(p=>p.userId===c.id);
+      const paidTotal=clientPayments.reduce((s,p)=>s+p.amount,0);
+      const isPaid=debt>0&&paidTotal>=debt;
+      const statusCell=isHist
+        ?(clientPayments.length>0?`<span class="pagado-badge">✓ Pagado`+fmt(paidTotal)+`</span>`:`<span style="font-size:12px;color:var(--gray-muted);">Sin pago</span>`)
+        :(debt===0
+          ?`<span style="font-size:12px;color:var(--gray-muted);">Sin deuda</span>`
+          :(isPaid
+            ?`<span class="pagado-badge">✓ Pagado</span>`
+            :`<button class="btn-pagado pendiente" onclick="marcarPagado('${c.id}','${c.name}',${debt})">Marcar pagado</button>`
+          )
+        );
+      return `<tr>
+        <td><div style="display:flex;align-items:center;gap:9px;"><div class="initials">${initials(c.name)}</div>${c.name}</div></td>
+        <td style="color:var(--gray-muted);">${c.username}</td>
+        <td><span class="badge ${badge}">${fmt(debt)}</span></td>
+        <td>${statusCell}</td>
+        <td>${isHist?"":` <button class="btn-danger" onclick="deleteClient('${c.id}')">Eliminar</button>`}</td>
+      </tr>`;
     }).join("")+"</table>";
   document.getElementById("add-client-card").style.display=isHist?"none":"block";
   const pl=document.getElementById("admin-purchases-list");
