@@ -702,7 +702,7 @@ function renderCliente(){
   document.getElementById("client-month-badge").textContent=MONTHS[currentMonth]+" "+currentYear;
   const grid=document.getElementById("client-product-grid");
   grid.innerHTML=cachedProducts.length===0?`<div class="empty">No hay productos disponibles</div>`:
-    cachedProducts.map(p=>{const ag=p.stock!==undefined&&p.stock<=0;
+    [...cachedProducts].sort((a,b)=>{const aoOut=a.stock!==undefined&&a.stock<=0,boOut=b.stock!==undefined&&b.stock<=0;if(aoOut!==boOut)return aoOut?1:-1;return a.name.localeCompare(b.name,"es");}).map(p=>{const ag=p.stock!==undefined&&p.stock<=0;
       return `<div class="product-card${ag?" agotado":""}">
         ${ag?'<div class="agotado-banner">AGOTADO</div>':""}
         ${p.img?`<img class="product-img" src="${p.img}" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/><div class="product-img-placeholder" style="display:none;">🛒</div>`:`<div class="product-img-placeholder">🛒</div>`}
