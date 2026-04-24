@@ -73,10 +73,10 @@
   /* ── TABS ── */
   .tabs{display:flex;gap:4px;margin-bottom:22px;background:#fff;border-radius:12px;padding:5px;border:1px solid var(--gray-border);}
   .tab{flex:1;padding:8px 10px;font-size:13px;cursor:pointer;color:var(--gray-muted);background:transparent;border:none;border-radius:8px;font-weight:700;font-family:'Nunito',sans-serif;transition:all .2s;}
-  .tab{position:relative;overflow:hidden;}
-  .tab.active{color:var(--dark);background:linear-gradient(135deg,#F5A623,#f7c464);box-shadow:0 2px 8px rgba(245,166,35,.35);}
-  .tab.active::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#f7c464,#F5A623);transform:translateX(-100%);animation:tabSweep .3s cubic-bezier(.4,0,.2,1) forwards;}
-  @keyframes tabSweep{from{transform:translateX(-100%);}to{transform:translateX(0);}}
+  .tab{position:relative;z-index:1;color:var(--gray-muted);background:transparent;}
+  .tab.active{color:var(--dark);background:transparent;box-shadow:none;}
+  .tabs{position:relative;}
+  .tab-slider{position:absolute;top:4px;bottom:4px;border-radius:8px;background:linear-gradient(135deg,#F5A623,#f7c464);box-shadow:0 2px 8px rgba(245,166,35,.35);transition:left .3s cubic-bezier(.4,0,.2,1),width .3s cubic-bezier(.4,0,.2,1);pointer-events:none;z-index:0;}
   .tab-content{display:none;opacity:0;transform:translateY(6px);transition:opacity .25s ease,transform .25s ease;}
   .tab-content.active{display:block;animation:fadeSlideIn .25s ease forwards;}
   @keyframes fadeSlideIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
@@ -431,7 +431,8 @@
   </div>
   <div class="content">
     <div class="metrics" id="admin-metrics"></div>
-    <div class="tabs">
+    <div class="tabs" id="admin-tabs">
+      <div class="tab-slider" id="admin-tab-slider"></div>
       <button class="tab active" id="tbtn-clientes"  onclick="showAdminTab('clientes')">Clientes</button>
       <button class="tab"        id="tbtn-compras"   onclick="showAdminTab('compras')">Compras</button>
       <button class="tab"        id="tbtn-productos" onclick="showAdminTab('productos')">Productos</button>
@@ -518,7 +519,8 @@
     </div>
   </div>
   <div class="content">
-    <div class="tabs">
+    <div class="tabs" id="client-tabs">
+      <div class="tab-slider" id="client-tab-slider"></div>
       <button class="tab active" id="tbtn-catalogo"   onclick="showClientTab('catalogo')">Catálogo</button>
       <button class="tab"        id="tbtn-miscuentas" onclick="showClientTab('miscuentas')">Mis compras</button>
     </div>
@@ -560,6 +562,14 @@ const fmt=n=>"$"+Math.round(n).toLocaleString("es-CO");
 const initials=n=>n.trim().split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const toEmail=u=>u.includes("@")?u:u.toLowerCase().trim()+CLIENT_DOMAIN;
+function initSliders(){
+  // Init admin slider on first active tab
+  const atab=document.querySelector("#admin-tabs .tab.active");
+  if(atab) moveSlider("admin-tab-slider", atab.id);
+  const ctab=document.querySelector("#client-tabs .tab.active");
+  if(ctab) moveSlider("client-tab-slider", ctab.id);
+}
+
 function showScreen(id){
   const screens=["loading-screen","screen-login","screen-admin","screen-cliente"];
   screens.forEach(s=>{
@@ -596,7 +606,7 @@ function loadViewPurchases(){
   if(unsubViewPayments){unsubViewPayments();unsubViewPayments=null;}
   unsubViewPayments=db.collection("payments").where("monthKey","==",viewMonthKey).onSnapshot(s=>{viewPayments=s.docs.map(d=>({id:d.id,...d.data()}));renderAdmin();});
 }
-mainAuth.onAuthStateChanged(async fbUser=>{if(!fbUser){currentUser=null;if(unsubPurchases){unsubPurchases();unsubPurchases=null;}if(unsubView){unsubView();unsubView=null;}if(unsubPayments){unsubPayments();unsubPayments=null;}if(unsubViewPayments){unsubViewPayments();unsubViewPayments=null;}showScreen("screen-login");const b=document.getElementById("btn-login");b.disabled=false;b.textContent="Ingresar";return;}await loadAll();if(fbUser.email===ADMIN_EMAIL){currentUser={id:"admin",name:"Administrador",username:"admin",role:"admin"};}else{const p=cachedUsers.find(u=>toEmail(u.username)===fbUser.email);if(!p){await mainAuth.signOut();document.getElementById("login-error").textContent="Usuario o contraseña incorrectos";document.getElementById("btn-login").disabled=false;document.getElementById("btn-login").textContent="Ingresar";return;}currentUser=p;}document.getElementById("btn-login").disabled=false;document.getElementById("btn-login").textContent="Ingresar";document.getElementById("login-error").textContent="";if(currentUser.role==="admin"){populateMonthSelectors();subscribePurchases(()=>{});loadViewPurchases();showScreen("screen-admin");}else{subscribePurchases(renderCliente);renderCliente();showScreen("screen-cliente");}});
+mainAuth.onAuthStateChanged(async fbUser=>{if(!fbUser){currentUser=null;if(unsubPurchases){unsubPurchases();unsubPurchases=null;}if(unsubView){unsubView();unsubView=null;}if(unsubPayments){unsubPayments();unsubPayments=null;}if(unsubViewPayments){unsubViewPayments();unsubViewPayments=null;}showScreen("screen-login");const b=document.getElementById("btn-login");b.disabled=false;b.textContent="Ingresar";return;}await loadAll();if(fbUser.email===ADMIN_EMAIL){currentUser={id:"admin",name:"Administrador",username:"admin",role:"admin"};}else{const p=cachedUsers.find(u=>toEmail(u.username)===fbUser.email);if(!p){await mainAuth.signOut();document.getElementById("login-error").textContent="Usuario o contraseña incorrectos";document.getElementById("btn-login").disabled=false;document.getElementById("btn-login").textContent="Ingresar";return;}currentUser=p;}document.getElementById("btn-login").disabled=false;document.getElementById("btn-login").textContent="Ingresar";document.getElementById("login-error").textContent="";if(currentUser.role==="admin"){populateMonthSelectors();subscribePurchases(()=>{});loadViewPurchases();showScreen("screen-admin");setTimeout(initSliders,50);}else{subscribePurchases(renderCliente);renderCliente();showScreen("screen-cliente");setTimeout(initSliders,50);}});
 function doLogin(){const u=document.getElementById("login-user").value.trim(),p=document.getElementById("login-pass").value,b=document.getElementById("btn-login"),e=document.getElementById("login-error");if(!u||!p){e.textContent="Completa usuario y contraseña";return;}b.disabled=true;b.textContent="Ingresando...";e.textContent="";mainAuth.signInWithEmailAndPassword(toEmail(u),p).catch(()=>{e.textContent="Usuario o contraseña incorrectos";b.disabled=false;b.textContent="Ingresar";});}
 function syncTopbarRow2(){
   // Copy text from desktop labels to mobile row2
@@ -610,11 +620,30 @@ function syncTopbarRow2(){
 }
 
 function doLogout(){if(unsubPurchases){unsubPurchases();unsubPurchases=null;}if(unsubView){unsubView();unsubView=null;}currentUser=null;mainAuth.signOut();}
-function showAdminTab(t){["clientes","compras","productos"].forEach(x=>{document.getElementById("tab-"+x).classList.toggle("active",x===t);document.getElementById("tbtn-"+x).classList.toggle("active",x===t);});}
+function moveSlider(sliderId, btnId){
+  const slider=document.getElementById(sliderId);
+  const btn=document.getElementById(btnId);
+  if(!slider||!btn) return;
+  const tabs=btn.closest(".tabs");
+  const tabsRect=tabs.getBoundingClientRect();
+  const btnRect=btn.getBoundingClientRect();
+  slider.style.left=(btnRect.left - tabsRect.left)+"px";
+  slider.style.width=btnRect.width+"px";
+}
+
+function showAdminTab(t){
+  ["clientes","compras","productos"].forEach(x=>{
+    document.getElementById("tab-"+x).classList.toggle("active",x===t);
+    document.getElementById("tbtn-"+x).classList.toggle("active",x===t);
+  });
+  moveSlider("admin-tab-slider","tbtn-"+t);
+}
 function showClientTab(t){["catalogo","miscuentas"].forEach(x=>{document.getElementById("tab-"+x).classList.toggle("active",x===t);document.getElementById("tbtn-"+x).classList.toggle("active",x===t);
   if(t==="catalogo"){
     const s=document.getElementById("client-prod-search");
-    if(s){s.value="";filterClientProducts();}
+    if(s){s.value="";filterClientProducts();
+  moveSlider("client-tab-slider","tbtn-"+t);
+}
   }
 });if(t==="miscuentas")renderClientPurchases();}
 const getProduct=id=>cachedProducts.find(p=>p.id===id);
