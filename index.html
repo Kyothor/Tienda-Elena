@@ -73,7 +73,10 @@
   /* ── TABS ── */
   .tabs{display:flex;gap:4px;margin-bottom:22px;background:#fff;border-radius:12px;padding:5px;border:1px solid var(--gray-border);}
   .tab{flex:1;padding:8px 10px;font-size:13px;cursor:pointer;color:var(--gray-muted);background:transparent;border:none;border-radius:8px;font-weight:700;font-family:'Nunito',sans-serif;transition:all .2s;}
-  .tab.active{color:var(--dark);background:linear-gradient(135deg,#F5A623,#f7c464);box-shadow:0 2px 8px rgba(245,166,35,.35);animation:tabPop .2s cubic-bezier(.34,1.56,.64,1);}  @keyframes tabPop{from{transform:scale(.95);}to{transform:scale(1);}}
+  .tab{position:relative;overflow:hidden;}
+  .tab.active{color:var(--dark);background:linear-gradient(135deg,#F5A623,#f7c464);box-shadow:0 2px 8px rgba(245,166,35,.35);}
+  .tab.active::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#f7c464,#F5A623);transform:translateX(-100%);animation:tabSweep .3s cubic-bezier(.4,0,.2,1) forwards;}
+  @keyframes tabSweep{from{transform:translateX(-100%);}to{transform:translateX(0);}}
   .tab-content{display:none;opacity:0;transform:translateY(6px);transition:opacity .25s ease,transform .25s ease;}
   .tab-content.active{display:block;animation:fadeSlideIn .25s ease forwards;}
   @keyframes fadeSlideIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
