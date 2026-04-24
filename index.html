@@ -351,9 +351,26 @@
   .pago-bank-overlay{display:none;position:fixed;inset:0;background:rgba(13,31,60,.6);z-index:200;align-items:center;justify-content:center;padding:12px;}
   .pago-bank-overlay.open{display:flex;}
   .pago-bank-modal{background:#fff;border-radius:20px;width:100%;max-width:400px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(13,31,60,.35);display:flex;flex-direction:column;animation:scaleIn .22s ease;}
-  .pago-bank-header{background:linear-gradient(135deg,#1B3E7A,#2a5298);padding:.9rem 1.25rem;text-align:center;flex-shrink:0;}
-  .pago-bank-header h3{color:#fff;font-size:15px;font-weight:800;margin:0 0 2px;}
-  .pago-bank-header p{color:rgba(255,255,255,.75);font-size:11px;margin:0;}
+  .pago-bank-header{
+    background:linear-gradient(145deg,#040b15,#0d1f3c,#1B3E7A);
+    padding:1.1rem 1.25rem;text-align:center;flex-shrink:0;
+    position:relative;overflow:hidden;
+  }
+  .pago-bank-header::before{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(27,62,122,.4) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(27,62,122,.4) 1px,transparent 1px);
+    background-size:30px 30px;
+    mask-image:radial-gradient(ellipse at 50% 50%,black 20%,transparent 75%);
+    -webkit-mask-image:radial-gradient(ellipse at 50% 50%,black 20%,transparent 75%);
+  }
+  .pago-bank-header::after{
+    content:'';position:absolute;bottom:0;left:10%;right:10%;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(245,166,35,.5),rgba(245,166,35,.2),transparent);
+  }
+  .pago-bank-header h3{position:relative;z-index:1;color:#fff;font-size:15px;font-weight:800;margin:0 0 2px;}
+  .pago-bank-header p{position:relative;z-index:1;color:rgba(255,255,255,.7);font-size:11px;margin:0;}
   .pago-bank-body{padding:1rem 1.25rem;display:flex;flex-direction:column;gap:10px;}
   .pago-bank-deuda{background:#EAF0FB;border-radius:10px;padding:10px 14px;text-align:center;}
   .pago-bank-deuda .lbl{font-size:10px;color:var(--gray-muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
