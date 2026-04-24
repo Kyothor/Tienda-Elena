@@ -251,7 +251,31 @@
   .payment-divider hr{flex:1;border:none;border-top:1.5px dashed currentColor;opacity:.4;}
 
   /* ── TOTAL BAR ── */
-  .total-bar{background:linear-gradient(135deg,var(--dark),var(--blue));border-radius:14px;padding:16px 1.5rem;display:flex;align-items:center;justify-content:space-between;margin-top:16px;}
+  .total-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:linear-gradient(145deg,#040b15,#0d1f3c,#1B3E7A);
+    border-radius:16px;padding:18px 1.5rem;margin-top:16px;
+    box-shadow:0 8px 30px rgba(0,0,0,.4);
+    border:1px solid rgba(255,255,255,.06);
+    position:relative;overflow:hidden;
+  }
+  .total-bar::before{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(27,62,122,.4) 1px, transparent 1px),
+      linear-gradient(90deg,rgba(27,62,122,.4) 1px, transparent 1px);
+    background-size:30px 30px;
+    mask-image:radial-gradient(ellipse at 20% 50%, black 10%, transparent 65%);
+    -webkit-mask-image:radial-gradient(ellipse at 20% 50%, black 10%, transparent 65%);
+  }
+  .total-bar::after{
+    content:'';position:absolute;
+    top:-30px;right:80px;width:140px;height:100px;
+    background:radial-gradient(circle,rgba(245,166,35,.13) 0%,transparent 70%);
+    pointer-events:none;
+  }
+  .total-bar-line{position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(245,166,35,.5),rgba(245,166,35,.2),transparent);pointer-events:none;}
+  .total-label,.total-val,.btn-pagar{position:relative;z-index:1;}
   .total-label{font-size:13px;color:rgba(255,255,255,.8);font-weight:700;}
   .total-val{font-size:24px;font-weight:800;color:#fff;}
 
@@ -1055,7 +1079,7 @@ function renderClientPurchases(){
   if(mp.length===0){list.innerHTML=`<div class="empty">No has registrado compras este mes</div>`;
     const myPaidTotal1=cachedPayments.filter(p=>p.userId===currentUser.id).reduce((s,p)=>s+p.amount,0);
   const pendiente1=Math.max(0,total-myPaidTotal1);
-  document.getElementById("client-total-bar").innerHTML=`<span class="total-label">Total a pagar · ${MONTHS[currentMonth]}</span><span class="total-val">${fmt(total)}</span>${pendiente1>0?`<button class="btn-pagar" onclick="abrirPagoBank(${pendiente1})">💳 Pagar</button>`:""}`;return;}
+  document.getElementById("client-total-bar").innerHTML=`<div class="total-bar-line"></div><span class="total-label">Total a pagar · ${MONTHS[currentMonth]}</span><span class="total-val">${fmt(total)}</span>${pendiente1>0?`<button class="btn-pagar" onclick="abrirPagoBank(${pendiente1})">💳 Pagar</button>`:""}`;return;}
   // Split purchases into groups: locked (before each payment) and free (after last payment)
   let groups=[];
   let remaining=[...mp];
@@ -1089,7 +1113,7 @@ function renderClientPurchases(){
   }).join("");
   const myPaidTotal2=cachedPayments.filter(p=>p.userId===currentUser.id).reduce((s,p)=>s+p.amount,0);
   const pendiente2=Math.max(0,total-myPaidTotal2);
-  document.getElementById("client-total-bar").innerHTML=`<span class="total-label">Total a pagar · ${MONTHS[currentMonth]}</span><span class="total-val">${fmt(total)}</span>${pendiente2>0?`<button class="btn-pagar" onclick="abrirPagoBank(${pendiente2})">💳 Pagar</button>`:""}`;
+  document.getElementById("client-total-bar").innerHTML=`<div class="total-bar-line"></div><span class="total-label">Total a pagar · ${MONTHS[currentMonth]}</span><span class="total-val">${fmt(total)}</span>${pendiente2>0?`<button class="btn-pagar" onclick="abrirPagoBank(${pendiente2})">💳 Pagar</button>`:""}`;
 }
 function addPurchase(productId){
   const pr=getProduct(productId);if(!pr)return;
