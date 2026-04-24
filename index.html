@@ -822,9 +822,17 @@ function renderAdmin(){
             :"";
           return `<div style="margin-left:46px;margin-bottom:10px;">
             ${payHeader}
-            <table style="width:100%;"><tr><th>Producto</th><th>Cant.</th><th>Subtotal</th><th>Fecha</th>${isHist?"":"<th></th>"}</tr>`+
-            g.purchases.map(p=>{const pr=getProduct(p.productId);return `<tr><td>${pr?pr.name:"–"}</td><td>${p.qty}</td><td>${pr?fmt(pr.price*p.qty):"–"}</td><td style="color:var(--gray-muted);">${p.date}</td>${isHist?"":` <td><button class="btn-danger" onclick="adminDelPurchase('${p.id}','${p.productId}',${p.qty})">×</button></td>`}</tr>`;}).join("")+
-            `</table><div style="text-align:right;font-size:13px;font-weight:700;color:var(--blue);padding-top:4px;">Subtotal: ${fmt(gDebt)}</div></div>`;
+<div style="display:flex;flex-direction:column;gap:4px;">`+
+            g.purchases.map(p=>{const pr=getProduct(p.productId);return `
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:#F8FAFD;border-radius:9px;gap:8px;">
+                <span style="font-size:13px;font-weight:700;color:var(--dark);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${pr?pr.name:"–"}</span>
+                <span style="font-size:12px;color:var(--gray-muted);white-space:nowrap;">×${p.qty}</span>
+                <span style="font-size:13px;font-weight:800;color:var(--blue);white-space:nowrap;">${pr?fmt(pr.price*p.qty):"–"}</span>
+                <span style="font-size:11px;color:var(--gray-muted);white-space:nowrap;">${p.date}</span>
+                ${isHist?"":` <button class="btn-danger" style="padding:3px 8px;font-size:11px;flex-shrink:0;" onclick="adminDelPurchase('${p.id}','${p.productId}',${p.qty})">×</button>`}
+              </div>`;
+            }).join("")+
+            `</div><div style="text-align:right;font-size:13px;font-weight:700;color:var(--blue);padding-top:4px;">Subtotal: ${fmt(gDebt)}</div></div>`;
         }).join("");
       // Payments panel — always show registered payments with delete button
       const paymentsPanel=clientPayments.length===0?"":
