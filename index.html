@@ -214,6 +214,20 @@
   .edit-modal-btns .btn-confirm{flex:2;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#F5A623,#f7c464);color:var(--dark);cursor:pointer;font-weight:800;font-family:'Nunito',sans-serif;}
   .edit-modal-btns .btn-confirm:hover{opacity:.9;}
   .edit-err{font-size:12px;color:var(--danger);margin-top:6px;min-height:14px;}
+  .del-overlay{display:none;position:fixed;inset:0;background:rgba(10,22,40,.6);z-index:200;align-items:center;justify-content:center;padding:16px;}
+  .del-overlay.open{display:flex;}
+  .del-modal{background:#fff;border-radius:20px;width:100%;max-width:340px;padding:1.75rem;box-shadow:0 20px 60px rgba(10,22,40,.35);animation:scaleIn .22s ease;}
+  .del-modal h3{font-size:16px;font-weight:800;color:var(--dark);margin-bottom:6px;}
+  .del-modal p{font-size:13px;color:var(--gray-muted);margin-bottom:1.25rem;line-height:1.5;}
+  .del-qty-row{display:flex;align-items:center;gap:10px;margin-bottom:1rem;}
+  .del-qty-row label{font-size:12px;font-weight:700;color:var(--gray-muted);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;}
+  .del-qty-row input{flex:1;padding:9px 12px;font-size:16px;font-weight:700;border:1.5px solid var(--gray-border);border-radius:10px;background:#F8FAFD;color:var(--dark);outline:none;font-family:'Nunito',sans-serif;text-align:center;}
+  .del-qty-row input:focus{border-color:var(--danger);box-shadow:0 0 0 3px rgba(192,57,43,.1);}
+  .del-modal-btns{display:flex;gap:8px;}
+  .del-modal-btns .btn-cancel{flex:1;padding:10px;border:1.5px solid var(--gray-border);border-radius:10px;background:#fff;color:var(--gray-muted);cursor:pointer;font-weight:700;font-family:'Nunito',sans-serif;}
+  .del-modal-btns .btn-del-all{flex:1;padding:10px;border:none;border-radius:10px;background:var(--danger);color:#fff;cursor:pointer;font-weight:800;font-family:'Nunito',sans-serif;}
+  .del-modal-btns .btn-del-qty{flex:2;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#F5A623,#f7c464);color:var(--dark);cursor:pointer;font-weight:800;font-family:'Nunito',sans-serif;}
+  .del-err{font-size:12px;color:var(--danger);margin-top:6px;min-height:14px;}
   .pago-bank-overlay{display:none;position:fixed;inset:0;background:rgba(13,31,60,.6);z-index:200;align-items:center;justify-content:center;padding:12px;}
   .pago-bank-overlay.open{display:flex;}
   .pago-bank-modal{background:#fff;border-radius:20px;width:100%;max-width:400px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(13,31,60,.35);display:flex;flex-direction:column;animation:scaleIn .22s ease;}
@@ -735,6 +749,11 @@ function showClientTab(t){
 const getProduct=id=>cachedProducts.find(p=>p.id===id);
 const clientDebtOf=(uid,purchases)=>purchases.filter(p=>p.userId===uid).reduce((s,p)=>{const pr=getProduct(p.productId);return s+(pr?pr.price*p.qty:0);},0);
 
+// Store for delete operations (avoids JSON in onclick)
+const _delStore={};
+let _delIdx=0;
+function storeForDel(data){const k='d'+(++_delIdx);_delStore[k]=data;return k;}
+
 // Merge same product+date into one row
 function mergePurchases(list){
   const map=new Map();
@@ -948,7 +967,7 @@ function renderClientPurchases(){
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="font-size:14px;font-weight:800;color:var(--blue);">${pr?fmt(pr.price*p.qty):"–"}</span>
-          ${g.locked?"":`<button class="btn-danger" onclick="deleteMyPurchases(${JSON.stringify(p._ids)},'${p.productId}',${p.qty})">×</button>`}
+          ${g.locked?"":` <button class="btn-danger" onclick="confirmDeletePurchase(storeForDel({ids:${JSON.stringify(p._ids)},productId:'${p.productId}',qty:${p.qty},name:'${(pr?pr.name:'').replace(/'/g,"\\'")}'}))">×</button>`}
         </div>
       </div>`;
     }).join("");
@@ -969,6 +988,79 @@ function addPurchase(productId){
     const al=document.getElementById("client-alert");al.innerHTML=`<div class="alert alert-success">✓ ${pr.name} ×${qty} agregado a tu cuenta</div>`;setTimeout(()=>al.innerHTML="",2500);renderCliente();});
 }
 function deleteMyPurchase(id,productId,qty){deleteMyPurchases([id],productId,qty);}
+
+let _currentDelKey=null;
+
+function confirmDeletePurchase(key){
+  const d=_delStore[key];
+  if(!d)return;
+  _currentDelKey=key;
+  const pr=getProduct(d.productId);
+  const name=pr?pr.name:d.name||'Producto';
+  document.getElementById("del-modal-title").textContent="Eliminar — "+name;
+  const isMultiple=d.qty>1;
+  document.getElementById("del-modal-desc").textContent=isMultiple
+    ?`Tienes ${d.qty} unidades de "${name}" registradas en este día. ¿Eliminas todo o solo ajustas la cantidad?`
+    :`¿Confirmas que quieres eliminar "${name}" de tus compras?`;
+  document.getElementById("del-qty-row").style.display=isMultiple?"flex":"none";
+  document.getElementById("del-qty-btn").style.display=isMultiple?"":"none";
+  document.getElementById("del-qty-input").value=d.qty;
+  document.getElementById("del-qty-input").max=d.qty;
+  document.getElementById("del-err").textContent="";
+  document.getElementById("del-overlay").classList.add("open");
+}
+
+function cerrarDelModal(){
+  document.getElementById("del-overlay").classList.remove("open");
+  _currentDelKey=null;
+}
+
+function ejecutarDeleteAll(){
+  const d=_delStore[_currentDelKey];
+  if(!d)return;
+  deleteMyPurchases(d.ids,d.productId,d.qty);
+  cerrarDelModal();
+}
+
+function ejecutarDeleteQty(){
+  const d=_delStore[_currentDelKey];
+  if(!d)return;
+  const input=parseInt(document.getElementById("del-qty-input").value)||0;
+  const err=document.getElementById("del-err");
+  if(input<=0||input>d.qty){err.textContent="Ingresa un número entre 1 y "+d.qty;return;}
+  if(input===d.qty){ejecutarDeleteAll();return;}
+  // Partial delete: remove individual records one by one (FIFO) until qty matches
+  const toRemove=d.qty-input; // how many units to delete
+  const pr=getProduct(d.productId);
+  // Each id in _ids represents 1 purchase record with its own qty
+  // We need to look at the actual cachedPurchases to get per-record qtys
+  const records=cachedPurchases.filter(p=>d.ids.includes(p.id)).sort((a,b)=>a.date>b.date?1:-1);
+  let remaining=toRemove;
+  const batch=db.batch();
+  let stockToReturn=0;
+  records.forEach(rec=>{
+    if(remaining<=0)return;
+    if(rec.qty<=remaining){
+      // Delete entire record
+      batch.delete(db.collection("purchases").doc(rec.id));
+      stockToReturn+=rec.qty;
+      remaining-=rec.qty;
+    } else {
+      // Partial update on this record
+      batch.update(db.collection("purchases").doc(rec.id),{qty:rec.qty-remaining});
+      stockToReturn+=remaining;
+      remaining=0;
+    }
+  });
+  if(pr&&pr.stock!==undefined){
+    batch.update(db.collection("products").doc(d.productId),{stock:pr.stock+stockToReturn});
+  }
+  batch.commit().then(()=>{
+    if(pr&&pr.stock!==undefined){const idx=cachedProducts.findIndex(p=>p.id===d.productId);if(idx!==-1)cachedProducts[idx].stock+=stockToReturn;}
+    renderCliente();
+  });
+  cerrarDelModal();
+}
 function deleteMyPurchases(ids,productId,qty){
   const pr=getProduct(productId),batch=db.batch();
   ids.forEach(id=>batch.delete(db.collection("purchases").doc(id)));
@@ -1277,6 +1369,23 @@ document.addEventListener("keydown",e=>{if(e.key==="Enter"&&document.getElementB
         Una vez realices el pago, avisa a tu administrador para que lo confirme en el sistema.
       </div>
       <button class="pago-bank-close" onclick="cerrarPagoBank()">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<div class="del-overlay" id="del-overlay" onclick="if(event.target===this)cerrarDelModal()">
+  <div class="del-modal">
+    <h3 id="del-modal-title">Eliminar compra</h3>
+    <p id="del-modal-desc"></p>
+    <div class="del-qty-row" id="del-qty-row">
+      <label>¿Cuántos?</label>
+      <input type="number" id="del-qty-input" min="1" placeholder="0"/>
+    </div>
+    <div class="del-err" id="del-err"></div>
+    <div class="del-modal-btns">
+      <button class="btn-cancel" onclick="cerrarDelModal()">Cancelar</button>
+      <button class="btn-del-all" id="del-all-btn" onclick="ejecutarDeleteAll()">Eliminar todo</button>
+      <button class="btn-del-qty" id="del-qty-btn" onclick="ejecutarDeleteQty()" style="display:none;">Ajustar cantidad</button>
     </div>
   </div>
 </div>
