@@ -152,7 +152,28 @@
   .total-val{font-size:24px;font-weight:800;color:#fff;}
 
   /* ── MISC ── */
-  .initials{width:36px;height:36px;border-radius:50%;background:var(--blue-pale);color:var(--blue);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;}
+  .initials{width:36px;height:36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;color:#fff;}
+
+  /* Ripple */
+  .ripple-host{position:relative;overflow:hidden;}
+  .ripple-wave{position:absolute;border-radius:50%;background:rgba(255,255,255,.35);transform:scale(0);animation:ripple-go .55s linear;pointer-events:none;}
+  @keyframes ripple-go{to{transform:scale(4);opacity:0;}}
+
+  /* Toast */
+  .toast{position:fixed;top:72px;right:18px;z-index:9999;min-width:280px;max-width:340px;background:#fff;border-radius:14px;padding:13px 15px 10px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--dark);box-shadow:0 8px 30px rgba(13,31,60,.16);display:flex;align-items:flex-start;gap:10px;animation:toastIn .3s cubic-bezier(.34,1.56,.64,1);}
+  .toast.out{animation:toastOut .25s ease forwards;}
+  @keyframes toastIn{from{opacity:0;transform:translateX(50px);}to{opacity:1;transform:translateX(0);}}
+  @keyframes toastOut{to{opacity:0;transform:translateX(50px);}}
+  .toast-success{border-left:4px solid #22c55e;}
+  .toast-error{border-left:4px solid var(--danger);}
+  .toast-info{border-left:4px solid var(--blue);}
+  .toast-icon{font-size:17px;line-height:1;flex-shrink:0;}
+  .toast-text{flex:1;line-height:1.4;}
+  .toast-bar{height:3px;border-radius:2px;margin-top:8px;animation:toastBar linear forwards;}
+  .toast-success .toast-bar{background:#22c55e;}
+  .toast-error .toast-bar{background:var(--danger);}
+  .toast-info .toast-bar{background:var(--blue);}
+  @keyframes toastBar{from{width:100%;}to{width:0;}}
   .alert{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:14px;font-weight:700;}
   .alert-success{background:var(--success-bg);color:var(--success);}
   .alert-error{background:var(--danger-bg);color:var(--danger);}
@@ -306,7 +327,7 @@
 
     /* Client header */
     .client-header{flex-wrap:wrap;gap:6px;}
-    .initials{width:30px;height:30px;font-size:11px;}
+    .initials{width:30px;height:30px;font-size:11px;color:#fff;}
 
     /* Forms */
     .form-row{flex-direction:column;gap:8px;}
@@ -559,6 +580,58 @@ const todayStr=now.toISOString().slice(0,10);
 let viewMonthKey=currentMonthKey;
 let currentUser=null,cachedUsers=[],cachedProducts=[],cachedPurchases=[],viewPurchases=[],cachedPayments=[],viewPayments=[],unsubPurchases=null,unsubView=null,unsubPayments=null,unsubViewPayments=null;
 const fmt=n=>"$"+Math.round(n).toLocaleString("es-CO");
+
+// Avatar color — deterministic from name
+const _AC=["#e74c3c","#e67e22","#16a085","#2980b9","#8e44ad","#27ae60","#c0392b","#d35400","#1abc9c","#2c3e50","#7f8c8d","#f39c12"];
+function avatarColor(name){let h=0;for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))&0xffff;return _AC[h%_AC.length];}
+function coloredInitials(name){const bg=avatarColor(name);return `<div class="initials" style="background:${bg};">${initials(name)}</div>`;}
+
+// Toast notification
+let _toastTimer=null;
+function showToast(msg,type='success',ms=3500){
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const icons={success:'✓',error:'✕',info:'ℹ'};
+  const t=document.createElement('div');
+  t.className=`toast toast-${type}`;
+  t.innerHTML=`<span class="toast-icon">${icons[type]||'ℹ'}</span><div><div class="toast-text">${msg}</div><div class="toast-bar" style="animation-duration:${ms}ms;"></div></div>`;
+  document.body.appendChild(t);
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),260);},ms);
+}
+
+// Ripple on click
+function addRipple(e){
+  const btn=e.currentTarget;
+  const r=document.createElement('span');
+  r.className='ripple-wave';
+  const rect=btn.getBoundingClientRect();
+  const size=Math.max(rect.width,rect.height);
+  r.style.cssText=`width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px;`;
+  btn.appendChild(r);
+  setTimeout(()=>r.remove(),600);
+}
+function initRipples(){
+  document.querySelectorAll('.btn-primary,.btn-add,.btn-confirm,.btn-pagar,.pago-bank-close,.tab').forEach(btn=>{
+    if(btn.dataset.ripple) return;
+    btn.dataset.ripple='1';
+    btn.classList.add('ripple-host');
+    btn.addEventListener('click',addRipple);
+  });
+}
+
+// Animated counter for metrics
+function animateCount(el,target,prefix,suffix,isCurrency){
+  const start=performance.now();
+  const dur=900;
+  const startVal=0;
+  function step(now){
+    const p=Math.min((now-start)/dur,1);
+    const ease=1-Math.pow(1-p,3);
+    const val=Math.round(startVal+(target-startVal)*ease);
+    el.textContent=isCurrency?fmt(val):(prefix||'')+val+(suffix||'');
+    if(p<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
 const initials=n=>n.trim().split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const toEmail=u=>u.includes("@")?u:u.toLowerCase().trim()+CLIENT_DOMAIN;
@@ -606,7 +679,7 @@ function loadViewPurchases(){
   if(unsubViewPayments){unsubViewPayments();unsubViewPayments=null;}
   unsubViewPayments=db.collection("payments").where("monthKey","==",viewMonthKey).onSnapshot(s=>{viewPayments=s.docs.map(d=>({id:d.id,...d.data()}));renderAdmin();});
 }
-mainAuth.onAuthStateChanged(async fbUser=>{if(!fbUser){currentUser=null;if(unsubPurchases){unsubPurchases();unsubPurchases=null;}if(unsubView){unsubView();unsubView=null;}if(unsubPayments){unsubPayments();unsubPayments=null;}if(unsubViewPayments){unsubViewPayments();unsubViewPayments=null;}showScreen("screen-login");const b=document.getElementById("btn-login");b.disabled=false;b.textContent="Ingresar";return;}await loadAll();if(fbUser.email===ADMIN_EMAIL){currentUser={id:"admin",name:"Administrador",username:"admin",role:"admin"};}else{const p=cachedUsers.find(u=>toEmail(u.username)===fbUser.email);if(!p){await mainAuth.signOut();document.getElementById("login-error").textContent="Usuario o contraseña incorrectos";document.getElementById("btn-login").disabled=false;document.getElementById("btn-login").textContent="Ingresar";return;}currentUser=p;}document.getElementById("btn-login").disabled=false;document.getElementById("btn-login").textContent="Ingresar";document.getElementById("login-error").textContent="";if(currentUser.role==="admin"){populateMonthSelectors();subscribePurchases(()=>{});loadViewPurchases();showScreen("screen-admin");setTimeout(initSliders,50);}else{subscribePurchases(renderCliente);renderCliente();showScreen("screen-cliente");setTimeout(initSliders,150);}});
+mainAuth.onAuthStateChanged(async fbUser=>{if(!fbUser){currentUser=null;if(unsubPurchases){unsubPurchases();unsubPurchases=null;}if(unsubView){unsubView();unsubView=null;}if(unsubPayments){unsubPayments();unsubPayments=null;}if(unsubViewPayments){unsubViewPayments();unsubViewPayments=null;}showScreen("screen-login");const b=document.getElementById("btn-login");b.disabled=false;b.textContent="Ingresar";return;}await loadAll();if(fbUser.email===ADMIN_EMAIL){currentUser={id:"admin",name:"Administrador",username:"admin",role:"admin"};}else{const p=cachedUsers.find(u=>toEmail(u.username)===fbUser.email);if(!p){await mainAuth.signOut();document.getElementById("login-error").textContent="Usuario o contraseña incorrectos";document.getElementById("btn-login").disabled=false;document.getElementById("btn-login").textContent="Ingresar";return;}currentUser=p;}document.getElementById("btn-login").disabled=false;document.getElementById("btn-login").textContent="Ingresar";document.getElementById("login-error").textContent="";if(currentUser.role==="admin"){populateMonthSelectors();subscribePurchases(()=>{});loadViewPurchases();showScreen("screen-admin");setTimeout(()=>{initSliders();initRipples();},100);}else{subscribePurchases(renderCliente);renderCliente();showScreen("screen-cliente");setTimeout(()=>{initSliders();initRipples();},150);}});
 function doLogin(){const u=document.getElementById("login-user").value.trim(),p=document.getElementById("login-pass").value,b=document.getElementById("btn-login"),e=document.getElementById("login-error");if(!u||!p){e.textContent="Completa usuario y contraseña";return;}b.disabled=true;b.textContent="Ingresando...";e.textContent="";mainAuth.signInWithEmailAndPassword(toEmail(u),p).catch(()=>{e.textContent="Usuario o contraseña incorrectos";b.disabled=false;b.textContent="Ingresar";});}
 function syncTopbarRow2(){
   // Copy text from desktop labels to mobile row2
@@ -663,9 +736,13 @@ function renderAdmin(){
   document.getElementById("clients-section-title").innerHTML=`Clientes · ${lbl} ${hb}`;
   document.getElementById("compras-section-title").innerHTML=`Compras · ${lbl} ${hb}`;
   document.getElementById("admin-metrics").innerHTML=
-    `<div class="metric"><div class="metric-label">Clientes</div><div class="metric-val">${clients.length}</div></div>
-     <div class="metric"><div class="metric-label">Compras · ${lbl}</div><div class="metric-val">${purchases.length}</div></div>
-     <div class="metric ganancia-card"><div class="metric-label">💰 Ganancia del mes</div><div class="metric-val">${fmt(totalDebt)}</div></div>`;
+    `<div class="metric"><div class="metric-label">Clientes</div><div class="metric-val" id="mc-clients">0</div></div>
+     <div class="metric"><div class="metric-label">Compras · ${lbl}</div><div class="metric-val" id="mc-purchases">0</div></div>
+     <div class="metric ganancia-card"><div class="metric-label">💰 Ganancia del mes</div><div class="metric-val" id="mc-ganancia">$0</div></div>`;
+  animateCount(document.getElementById("mc-clients"), clients.length, '', '', false);
+  animateCount(document.getElementById("mc-purchases"), purchases.length, '', '', false);
+  animateCount(document.getElementById("mc-ganancia"), totalDebt, '', '', true);
+  setTimeout(initRipples,100);
   const cl=document.getElementById("admin-clients-list");
   cl.innerHTML=clients.length===0?`<div class="empty">Sin clientes registrados</div>`:
     `<div class="table-wrap"><table><tr><th>Cliente</th><th>Usuario</th><th>Deuda ${lbl}</th><th>Estado pago</th><th></th></tr>`+
@@ -694,7 +771,7 @@ function renderAdmin(){
           )
         );
       return `<tr>
-        <td><div style="display:flex;align-items:center;gap:9px;"><div class="initials">${initials(c.name)}</div>${c.name}</div></td>
+        <td><div style="display:flex;align-items:center;gap:9px;">${coloredInitials(c.name)}${c.name}</div></td>
         <td style="color:var(--gray-muted);">${c.username}</td>
         <td><span class="badge ${badge}">${fmt(debt)}</span></td>
         <td>${statusCell}</td>
@@ -757,7 +834,7 @@ function renderAdmin(){
           </div>
         </div>`;
 
-      return `<div class="client-block"><div class="client-header"><div class="initials">${initials(c.name)}</div><span style="font-weight:700;font-size:14px;">${c.name}</span><span class="badge ${badge}">${fmt(debt)}</span>${!isHist&&clientPayments.length>0?`<span class="pagado-badge">✓ ${clientPayments.length} pago(s)</span>`:""}</div>
+      return `<div class="client-block"><div class="client-header">${coloredInitials(c.name)}<span style="font-weight:700;font-size:14px;">${c.name}</span><span class="badge ${badge}">${fmt(debt)}</span>${!isHist&&clientPayments.length>0?`<span class="pagado-badge">✓ ${clientPayments.length} pago(s)</span>`:""}</div>
       ${groupsHtml}
       ${paymentsPanel}</div>`;
     }).join("");
@@ -781,6 +858,7 @@ function renderCliente(){
   const cw2=document.getElementById("client-welcome-2");if(cw2)cw2.textContent="Hola, "+currentUser.name+" · "+MONTHS[currentMonth]+" "+currentYear;
   syncTopbarRow2();
   document.getElementById("client-month-badge").textContent=MONTHS[currentMonth]+" "+currentYear;
+  setTimeout(initRipples,100);
   const grid=document.getElementById("client-product-grid");
   grid.innerHTML=cachedProducts.length===0?`<div class="empty">No hay productos disponibles</div>`:
     [...cachedProducts].sort((a,b)=>{const aoOut=a.stock!==undefined&&a.stock<=0,boOut=b.stock!==undefined&&b.stock<=0;if(aoOut!==boOut)return aoOut?1:-1;return a.name.localeCompare(b.name,"es");}).map(p=>{const ag=p.stock!==undefined&&p.stock<=0;
@@ -938,12 +1016,7 @@ function guardarEdicion(){
       cerrarEditModal();
       renderAdmin();
       // Show success toast
-      const al = document.createElement("div");
-      al.className = "alert alert-success";
-      al.style.cssText = "position:fixed;top:70px;right:20px;z-index:999;min-width:280px;box-shadow:0 4px 20px rgba(0,0,0,.15);border-radius:12px;font-family:'Nunito',sans-serif;font-weight:700;";
-      al.textContent = "✓ Producto actualizado — el historial anterior no se modifica";
-      document.body.appendChild(al);
-      setTimeout(()=>al.remove(), 4000);
+showToast("Producto actualizado — el historial anterior no se modifica","success");
     })
     .catch(()=>{ err.textContent = "Error al guardar. Intenta de nuevo."; })
     .finally(()=>{ btn.disabled = false; btn.textContent = "Guardar cambios"; });
@@ -1052,15 +1125,10 @@ function confirmarPago(){
     name:_pagoUserName
   }).then(()=>{
     cerrarPagoModal();
-    const al=document.createElement("div");
-    al.className="alert alert-success";
-    al.style.cssText="position:fixed;top:70px;right:20px;z-index:999;min-width:300px;box-shadow:0 4px 20px rgba(0,0,0,.15);border-radius:12px;font-family:'Nunito',sans-serif;font-weight:700;";
     const restante=_pagoDeudaTotal-val;
-    al.textContent=restante>0
-      ?"✓ Pago parcial registrado — Saldo restante: "+fmt(Math.max(0,restante))
-      :"✓ Pago total registrado — "+_pagoUserName+" quedó saldado";
-    document.body.appendChild(al);
-    setTimeout(()=>al.remove(),4000);
+    showToast(restante>0
+      ?"Pago parcial — Saldo restante: "+fmt(Math.max(0,restante))
+      :"Pago total — "+_pagoUserName+" quedó saldado","success");
     confirmBtn.disabled=false;confirmBtn.textContent="Confirmar pago";
   }).catch(()=>{
     confirmBtn.disabled=false;confirmBtn.textContent="Confirmar pago";
@@ -1073,12 +1141,7 @@ function eliminarPago(paymentId, userName, amount){
   if(!confirm(`¿Eliminar el pago de ${userName} por ${fmt(amount)}?\n\nLas compras asociadas volverán a aparecer como deuda pendiente y el cliente podrá editarlas nuevamente.`)) return;
   db.collection("payments").doc(paymentId).delete()
     .then(()=>{
-      const al=document.createElement("div");
-      al.className="alert alert-error";
-      al.style.cssText="position:fixed;top:70px;right:20px;z-index:999;min-width:300px;box-shadow:0 4px 20px rgba(0,0,0,.15);border-radius:12px;font-family:'Nunito',sans-serif;font-weight:700;";
-      al.textContent="Pago de "+userName+" eliminado — "+fmt(amount)+" devuelto a deuda pendiente";
-      document.body.appendChild(al);
-      setTimeout(()=>al.remove(),4000);
+showToast("Pago de "+userName+" eliminado — "+fmt(amount)+" devuelto a deuda","error");
     })
     .catch(()=>alert("Error al eliminar el pago. Intenta de nuevo."));
 }
