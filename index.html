@@ -792,15 +792,16 @@ function initRipples(){
   });
 }
 
-// Global delegation for delete purchase buttons
+// Global delegation for delete purchase buttons (client + admin)
 document.addEventListener('click', function(e){
-  const btn = e.target.closest('.btn-del-purchase');
+  const btn = e.target.closest('.btn-del-purchase, .btn-del-admin-purchase');
   if(!btn) return;
   const ids = JSON.parse(btn.dataset.ids || '[]');
   const productId = btn.dataset.pid;
   const qty = parseInt(btn.dataset.qty) || 1;
   const name = btn.dataset.name || '';
-  confirmDeletePurchase({ids, productId, qty, name});
+  const isAdmin = btn.classList.contains('btn-del-admin-purchase');
+  confirmDeletePurchase({ids, productId, qty, name, isAdmin});
 });
 
 // Animated counter for metrics
@@ -1021,7 +1022,7 @@ function renderAdmin(){
                 <span style="font-size:12px;color:var(--gray-muted);white-space:nowrap;">×${p.qty}</span>
                 <span style="font-size:13px;font-weight:800;color:var(--blue);white-space:nowrap;">${pr?fmt(pr.price*p.qty):"–"}</span>
                 <span style="font-size:11px;color:var(--gray-muted);white-space:nowrap;">${p.date}</span>
-                ${isHist?"":` <button class="btn-danger" style="padding:3px 8px;font-size:11px;flex-shrink:0;" onclick="adminDelPurchases(${JSON.stringify(p._ids)},'${p.productId}',${p.qty})">×</button>`}
+                ${isHist?"":` <button class="btn-danger btn-del-admin-purchase" style="padding:3px 8px;font-size:11px;flex-shrink:0;" data-ids='${JSON.stringify(p._ids)}' data-pid='${p.productId}' data-qty='${p.qty}' data-name='${pr?pr.name.replace(/'/g,"&apos;"):""}'>×</button>`}
               </div>`;
             }).join("")+
             `</div><div style="text-align:right;font-size:13px;font-weight:700;color:var(--blue);padding-top:4px;">Subtotal: ${fmt(gDebt)}</div></div>`;
@@ -1156,8 +1157,8 @@ function confirmDeletePurchase(data){
   document.getElementById("del-modal-title").textContent="Eliminar — "+name;
   const isMultiple=d.qty>1;
   document.getElementById("del-modal-desc").textContent=isMultiple
-    ?`Tienes ${d.qty} unidades de "${name}" registradas en este día. ¿Eliminas todo o solo ajustas la cantidad?`
-    :`¿Confirmas que quieres eliminar "${name}" de tus compras?`;
+    ?`Hay ${d.qty} unidades de "${name}" registradas en este día. ¿Eliminas todo o ajustas la cantidad?`
+    :`¿Confirmas que quieres eliminar "${name}" de las compras?`;
   document.getElementById("del-qty-row").style.display=isMultiple?"flex":"none";
   document.getElementById("del-qty-btn").style.display=isMultiple?"":"none";
   document.getElementById("del-qty-input").value=d.qty;
@@ -1174,7 +1175,8 @@ function cerrarDelModal(){
 function ejecutarDeleteAll(){
   const d=_currentDelData;
   if(!d)return;
-  deleteMyPurchases(d.ids,d.productId,d.qty);
+  if(d.isAdmin) adminDelPurchases(d.ids,d.productId,d.qty);
+  else deleteMyPurchases(d.ids,d.productId,d.qty);
   cerrarDelModal();
 }
 
@@ -1213,7 +1215,7 @@ function ejecutarDeleteQty(){
   }
   batch.commit().then(()=>{
     if(pr&&pr.stock!==undefined){const idx=cachedProducts.findIndex(p=>p.id===d.productId);if(idx!==-1)cachedProducts[idx].stock+=stockToReturn;}
-    renderCliente();
+    if(d.isAdmin) renderAdmin(); else renderCliente();
   });
   cerrarDelModal();
 }
