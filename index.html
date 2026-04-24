@@ -750,7 +750,9 @@ function renderClientPurchases(){
   const myPayments=cachedPayments.filter(p=>p.userId===currentUser.id).sort((a,b)=>a.paidAt>b.paidAt?1:-1);
   const list=document.getElementById("client-purchases-list");
   if(mp.length===0){list.innerHTML=`<div class="empty">No has registrado compras este mes</div>`;
-    document.getElementById("client-total-bar").innerHTML=`<span class="total-label">Total a pagar · ${MONTHS[currentMonth]}</span><span class="total-val">${fmt(total)}</span>${total>0?`<button class="btn-pagar" onclick="abrirPagoBank(${total})">💳 Pagar</button>`:""}`;return;}
+    const myPaidTotal1=cachedPayments.filter(p=>p.userId===currentUser.id).reduce((s,p)=>s+p.amount,0);
+  const pendiente1=Math.max(0,total-myPaidTotal1);
+  document.getElementById("client-total-bar").innerHTML=`<span class="total-label">Total a pagar · ${MONTHS[currentMonth]}</span><span class="total-val">${fmt(total)}</span>${pendiente1>0?`<button class="btn-pagar" onclick="abrirPagoBank(${pendiente1})">💳 Pagar</button>`:""}`;return;}
   // Split purchases into groups: locked (before each payment) and free (after last payment)
   let groups=[];
   let remaining=[...mp];
@@ -782,7 +784,9 @@ function renderClientPurchases(){
     }).join("");
     return divider+rows+(groups.length>1?`<div style="text-align:right;font-size:12px;font-weight:700;color:var(--gray-muted);padding:4px 0 8px;">Subtotal: ${fmt(gTotal)}</div>`:"");
   }).join("");
-  document.getElementById("client-total-bar").innerHTML=`<span class="total-label">Total a pagar · ${MONTHS[currentMonth]}</span><span class="total-val">${fmt(total)}</span>${total>0?`<button class="btn-pagar" onclick="abrirPagoBank(${total})">💳 Pagar</button>`:""}`;
+  const myPaidTotal2=cachedPayments.filter(p=>p.userId===currentUser.id).reduce((s,p)=>s+p.amount,0);
+  const pendiente2=Math.max(0,total-myPaidTotal2);
+  document.getElementById("client-total-bar").innerHTML=`<span class="total-label">Total a pagar · ${MONTHS[currentMonth]}</span><span class="total-val">${fmt(total)}</span>${pendiente2>0?`<button class="btn-pagar" onclick="abrirPagoBank(${pendiente2})">💳 Pagar</button>`:""}`;
 }
 function addPurchase(productId){
   const pr=getProduct(productId);if(!pr)return;
