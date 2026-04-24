@@ -606,7 +606,7 @@ function loadViewPurchases(){
   if(unsubViewPayments){unsubViewPayments();unsubViewPayments=null;}
   unsubViewPayments=db.collection("payments").where("monthKey","==",viewMonthKey).onSnapshot(s=>{viewPayments=s.docs.map(d=>({id:d.id,...d.data()}));renderAdmin();});
 }
-mainAuth.onAuthStateChanged(async fbUser=>{if(!fbUser){currentUser=null;if(unsubPurchases){unsubPurchases();unsubPurchases=null;}if(unsubView){unsubView();unsubView=null;}if(unsubPayments){unsubPayments();unsubPayments=null;}if(unsubViewPayments){unsubViewPayments();unsubViewPayments=null;}showScreen("screen-login");const b=document.getElementById("btn-login");b.disabled=false;b.textContent="Ingresar";return;}await loadAll();if(fbUser.email===ADMIN_EMAIL){currentUser={id:"admin",name:"Administrador",username:"admin",role:"admin"};}else{const p=cachedUsers.find(u=>toEmail(u.username)===fbUser.email);if(!p){await mainAuth.signOut();document.getElementById("login-error").textContent="Usuario o contraseña incorrectos";document.getElementById("btn-login").disabled=false;document.getElementById("btn-login").textContent="Ingresar";return;}currentUser=p;}document.getElementById("btn-login").disabled=false;document.getElementById("btn-login").textContent="Ingresar";document.getElementById("login-error").textContent="";if(currentUser.role==="admin"){populateMonthSelectors();subscribePurchases(()=>{});loadViewPurchases();showScreen("screen-admin");setTimeout(initSliders,50);}else{subscribePurchases(renderCliente);renderCliente();showScreen("screen-cliente");setTimeout(initSliders,50);}});
+mainAuth.onAuthStateChanged(async fbUser=>{if(!fbUser){currentUser=null;if(unsubPurchases){unsubPurchases();unsubPurchases=null;}if(unsubView){unsubView();unsubView=null;}if(unsubPayments){unsubPayments();unsubPayments=null;}if(unsubViewPayments){unsubViewPayments();unsubViewPayments=null;}showScreen("screen-login");const b=document.getElementById("btn-login");b.disabled=false;b.textContent="Ingresar";return;}await loadAll();if(fbUser.email===ADMIN_EMAIL){currentUser={id:"admin",name:"Administrador",username:"admin",role:"admin"};}else{const p=cachedUsers.find(u=>toEmail(u.username)===fbUser.email);if(!p){await mainAuth.signOut();document.getElementById("login-error").textContent="Usuario o contraseña incorrectos";document.getElementById("btn-login").disabled=false;document.getElementById("btn-login").textContent="Ingresar";return;}currentUser=p;}document.getElementById("btn-login").disabled=false;document.getElementById("btn-login").textContent="Ingresar";document.getElementById("login-error").textContent="";if(currentUser.role==="admin"){populateMonthSelectors();subscribePurchases(()=>{});loadViewPurchases();showScreen("screen-admin");setTimeout(initSliders,50);}else{subscribePurchases(renderCliente);renderCliente();showScreen("screen-cliente");setTimeout(initSliders,150);}});
 function doLogin(){const u=document.getElementById("login-user").value.trim(),p=document.getElementById("login-pass").value,b=document.getElementById("btn-login"),e=document.getElementById("login-error");if(!u||!p){e.textContent="Completa usuario y contraseña";return;}b.disabled=true;b.textContent="Ingresando...";e.textContent="";mainAuth.signInWithEmailAndPassword(toEmail(u),p).catch(()=>{e.textContent="Usuario o contraseña incorrectos";b.disabled=false;b.textContent="Ingresar";});}
 function syncTopbarRow2(){
   // Copy text from desktop labels to mobile row2
@@ -638,14 +638,18 @@ function showAdminTab(t){
   });
   moveSlider("admin-tab-slider","tbtn-"+t);
 }
-function showClientTab(t){["catalogo","miscuentas"].forEach(x=>{document.getElementById("tab-"+x).classList.toggle("active",x===t);document.getElementById("tbtn-"+x).classList.toggle("active",x===t);
+function showClientTab(t){
+  ["catalogo","miscuentas"].forEach(x=>{
+    document.getElementById("tab-"+x).classList.toggle("active",x===t);
+    document.getElementById("tbtn-"+x).classList.toggle("active",x===t);
+  });
+  moveSlider("client-tab-slider","tbtn-"+t);
   if(t==="catalogo"){
     const s=document.getElementById("client-prod-search");
-    if(s){s.value="";filterClientProducts();
-  moveSlider("client-tab-slider","tbtn-"+t);
-}
+    if(s){s.value="";filterClientProducts();}
   }
-});if(t==="miscuentas")renderClientPurchases();}
+  if(t==="miscuentas") renderClientPurchases();
+}
 const getProduct=id=>cachedProducts.find(p=>p.id===id);
 const clientDebtOf=(uid,purchases)=>purchases.filter(p=>p.userId===uid).reduce((s,p)=>{const pr=getProduct(p.productId);return s+(pr?pr.price*p.qty:0);},0);
 function renderAdmin(){
