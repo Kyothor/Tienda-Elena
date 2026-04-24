@@ -641,6 +641,17 @@ function initRipples(){
   });
 }
 
+// Global delegation for delete purchase buttons
+document.addEventListener('click', function(e){
+  const btn = e.target.closest('.btn-del-purchase');
+  if(!btn) return;
+  const ids = JSON.parse(btn.dataset.ids || '[]');
+  const productId = btn.dataset.pid;
+  const qty = parseInt(btn.dataset.qty) || 1;
+  const name = btn.dataset.name || '';
+  confirmDeletePurchase({ids, productId, qty, name});
+});
+
 // Animated counter for metrics
 function animateCount(el,target,prefix,suffix,isCurrency){
   const start=performance.now();
@@ -748,11 +759,6 @@ function showClientTab(t){
 }
 const getProduct=id=>cachedProducts.find(p=>p.id===id);
 const clientDebtOf=(uid,purchases)=>purchases.filter(p=>p.userId===uid).reduce((s,p)=>{const pr=getProduct(p.productId);return s+(pr?pr.price*p.qty:0);},0);
-
-// Store for delete operations (avoids JSON in onclick)
-const _delStore={};
-let _delIdx=0;
-function storeForDel(data){const k='d'+(++_delIdx);_delStore[k]=data;return k;}
 
 // Merge same product+date into one row
 function mergePurchases(list){
@@ -967,7 +973,7 @@ function renderClientPurchases(){
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="font-size:14px;font-weight:800;color:var(--blue);">${pr?fmt(pr.price*p.qty):"–"}</span>
-          ${g.locked?"":` <button class="btn-danger" onclick="confirmDeletePurchase(storeForDel({ids:${JSON.stringify(p._ids)},productId:'${p.productId}',qty:${p.qty},name:'${(pr?pr.name:'').replace(/'/g,"\\'")}'}))">×</button>`}
+          ${g.locked?"":` <button class="btn-danger btn-del-purchase" data-ids='${JSON.stringify(p._ids)}' data-pid='${p.productId}' data-qty='${p.qty}' data-name='${pr?pr.name.replace(/'/g,"&apos;"):""}'>×</button>`}
         </div>
       </div>`;
     }).join("");
@@ -989,12 +995,11 @@ function addPurchase(productId){
 }
 function deleteMyPurchase(id,productId,qty){deleteMyPurchases([id],productId,qty);}
 
-let _currentDelKey=null;
+let _currentDelData=null;
 
-function confirmDeletePurchase(key){
-  const d=_delStore[key];
-  if(!d)return;
-  _currentDelKey=key;
+function confirmDeletePurchase(data){
+  _currentDelData=data;
+  const d=data;
   const pr=getProduct(d.productId);
   const name=pr?pr.name:d.name||'Producto';
   document.getElementById("del-modal-title").textContent="Eliminar — "+name;
@@ -1012,18 +1017,18 @@ function confirmDeletePurchase(key){
 
 function cerrarDelModal(){
   document.getElementById("del-overlay").classList.remove("open");
-  _currentDelKey=null;
+  _currentDelData=null;
 }
 
 function ejecutarDeleteAll(){
-  const d=_delStore[_currentDelKey];
+  const d=_currentDelData;
   if(!d)return;
   deleteMyPurchases(d.ids,d.productId,d.qty);
   cerrarDelModal();
 }
 
 function ejecutarDeleteQty(){
-  const d=_delStore[_currentDelKey];
+  const d=_currentDelData;
   if(!d)return;
   const input=parseInt(document.getElementById("del-qty-input").value)||0;
   const err=document.getElementById("del-err");
