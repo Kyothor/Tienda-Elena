@@ -928,7 +928,7 @@ function mergePurchases(list){
   return [...map.values()].sort((a,b)=>a.date>b.date?1:-1);
 }
 function renderAdmin(){
-  const isHist=!isCurrentMonth(),lbl=viewMonthLabel(),purchases=viewPurchases,clients=cachedUsers.filter(u=>u.role==="cliente"),totalDebt=clients.reduce((s,c)=>s+clientDebtOf(c.id,purchases),0);
+  const isHist=!isCurrentMonth(),lbl=viewMonthLabel(),purchases=viewPurchases,clients=cachedUsers.filter(u=>u.role==="cliente").sort((a,b)=>a.name.localeCompare(b.name,"es")),totalDebt=clients.reduce((s,c)=>s+clientDebtOf(c.id,purchases),0);
   document.getElementById("admin-month-label").textContent=lbl;
   const lbl2=document.getElementById("admin-month-label-2");if(lbl2)lbl2.textContent=lbl;
   syncTopbarRow2();
