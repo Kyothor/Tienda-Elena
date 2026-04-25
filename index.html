@@ -315,6 +315,27 @@
   .loading-text{font-size:14px;color:rgba(255,255,255,.8);font-weight:700;}
   .section-title{font-size:15px;font-weight:900;color:var(--dark);margin-bottom:16px;letter-spacing:-.2px;}
   .purchases-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start;}
+  .clients-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+  .client-card{background:#fff;border:1px solid rgba(216,223,238,.7);border-radius:18px;padding:16px;box-shadow:var(--shadow-sm);transition:box-shadow .2s,transform .2s;position:relative;display:flex;flex-direction:column;gap:10px;min-height:130px;}
+  .client-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);}
+  .client-card-top{display:flex;align-items:center;gap:10px;flex:1;}
+  .client-card-info{flex:1;min-width:0;}
+  .client-card-name{font-size:14px;font-weight:800;color:var(--dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .client-card-user{font-size:12px;color:var(--gray-muted);font-weight:600;margin-top:1px;}
+  .client-card-bottom{display:flex;align-items:flex-end;justify-content:space-between;}
+  .client-card-debt{font-size:22px;font-weight:900;color:var(--dark);letter-spacing:-.5px;line-height:1;}
+  .client-card-debt.zero{color:var(--gray-muted);font-size:18px;}
+  .client-card-debt-label{font-size:10px;color:var(--gray-muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;}
+  /* 3-dot menu */
+  .client-menu-wrap{position:relative;}
+  .client-menu-btn{width:30px;height:30px;border:none;background:var(--gray-bg);border-radius:8px;cursor:pointer;font-size:16px;color:var(--gray-muted);display:flex;align-items:center;justify-content:center;transition:background .2s;}
+  .client-menu-btn:hover{background:var(--gray-border);}
+  .client-menu-dropdown{display:none;position:absolute;top:34px;right:0;background:#fff;border:1px solid var(--gray-border);border-radius:12px;box-shadow:var(--shadow-lg);z-index:50;min-width:140px;overflow:hidden;animation:scaleIn .15s ease;}
+  .client-menu-dropdown.open{display:block;}
+  .client-menu-item{display:flex;align-items:center;gap:8px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;border:none;background:none;width:100%;font-family:'Nunito',sans-serif;color:var(--dark);}
+  .client-menu-item:hover{background:var(--gray-bg);}
+  .client-menu-item.danger{color:var(--danger);}
+  .client-menu-item.danger:hover{background:#fff0f0;}
   .client-block{background:#fff;border:1px solid rgba(216,223,238,.7);border-radius:18px;padding:16px;box-shadow:var(--shadow-sm);transition:box-shadow .2s;}
   .client-block:hover{box-shadow:var(--shadow-md);}
   .client-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
@@ -540,6 +561,7 @@
 
     /* Purchases per client indentation */
     .purchases-grid{grid-template-columns:1fr;}
+    .clients-grid{grid-template-columns:1fr;}
     .client-block div[style*="margin-left:46px"]{margin-left:0!important;width:100%!important;}
   }
 
@@ -949,39 +971,57 @@ function renderAdmin(){
   setTimeout(initRipples,100);
   const cl=document.getElementById("admin-clients-list");
   cl.innerHTML=clients.length===0?`<div class="empty">Sin clientes registrados</div>`:
-    `<div class="table-wrap"><table><tr><th>Cliente</th><th>Usuario</th><th>Deuda ${lbl}</th><th>Estado pago</th><th></th></tr>`+
+    `<div class="clients-grid">`+
     clients.map(c=>{
       const debt=clientDebtOf(c.id,purchases);
-      const badge=debt===0?"badge-green":debt>50000?"badge-red":"badge-amber";
       const clientPayments=viewPayments.filter(p=>p.userId===c.id);
       const paidTotal=clientPayments.reduce((s,p)=>s+p.amount,0);
       const pendiente=Math.max(0,debt-paidTotal);
       const isPaid=debt>0&&pendiente<=0;
       const isParcial=paidTotal>0&&pendiente>0;
-      const statusCell=isHist
+      const statusBadge=isHist
         ?(clientPayments.length>0
-          ?(pendiente>0
-            ?`<span class="pagado-badge parcial">Parcial — resta `+fmt(pendiente)+`</span>`
-            :`<span class="pagado-badge">✓ Saldado</span>`)
-          :`<span style="font-size:12px;color:var(--gray-muted);">Sin pago</span>`)
+          ?(pendiente>0?`<span class="pagado-badge parcial">Parcial</span>`:`<span class="pagado-badge">✓ Saldado</span>`)
+          :``)
         :(debt===0
-          ?`<span style="font-size:12px;color:var(--gray-muted);">Sin deuda</span>`
+          ?``
           :(isPaid
             ?`<span class="pagado-badge">✓ Saldado</span>`
             :(isParcial
-              ?`<span class="pagado-badge parcial" style="cursor:pointer;" onclick="marcarPagado('${c.id}','${c.name}',${pendiente})">Parcial — resta `+fmt(pendiente)+` · Pago</span>`
+              ?`<button class="btn-pagado" onclick="marcarPagado('${c.id}','${c.name}',${pendiente})">Pago</button>`
               :`<button class="btn-pagado" onclick="marcarPagado('${c.id}','${c.name}',${debt})">Pago</button>`
             )
           )
         );
-      return `<tr>
-        <td><div style="display:flex;align-items:center;gap:9px;">${coloredInitials(c.name)}${c.name}</div></td>
-        <td style="color:var(--gray-muted);">${c.username}</td>
-        <td><span class="badge ${badge}">${fmt(debt)}</span></td>
-        <td>${statusCell}</td>
-        <td>${isHist?"":` <button class="btn-danger" onclick="deleteClient('${c.id}')">Eliminar</button>`}</td>
-      </tr>`;
-    }).join("")+"</tbody></table></div>";
+      const menuId='menu-'+c.id;
+      const menu=isHist?"":`
+        <div class="client-menu-wrap">
+          <button class="client-menu-btn" onclick="toggleClientMenu('${menuId}')">⋯</button>
+          <div class="client-menu-dropdown" id="${menuId}">
+            <button class="client-menu-item" onclick="abrirEditCliente('${c.id}','${c.name}');closeAllMenus()">✏️ Editar nombre</button>
+            <button class="client-menu-item danger" onclick="deleteClient('${c.id}');closeAllMenus()">🗑 Eliminar</button>
+          </div>
+        </div>`;
+      return `<div class="client-card">
+        <div class="client-card-top">
+          ${coloredInitials(c.name)}
+          <div class="client-card-info">
+            <div class="client-card-name">${c.name}</div>
+            <div class="client-card-user">@${c.username}</div>
+          </div>
+          ${menu}
+        </div>
+        <div class="client-card-bottom">
+          <div>
+            <div class="client-card-debt-label">Deuda ${lbl}</div>
+            <div class="client-card-debt${debt===0?' zero':''}">${fmt(debt)}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+            ${statusBadge}
+          </div>
+        </div>
+      </div>`;
+    }).join("")+`</div>`;
   document.getElementById("add-client-card").style.display=isHist?"none":"block";
   const pl=document.getElementById("admin-purchases-list");
   const clientsSorted=[...clients].sort((a,b)=>{
@@ -1451,6 +1491,62 @@ function eliminarPago(paymentId, userName, amount){
 showToast("Pago de "+userName+" eliminado — "+fmt(amount)+" devuelto a deuda","error");
     })
     .catch(()=>alert("Error al eliminar el pago. Intenta de nuevo."));
+}
+
+function toggleClientMenu(id){
+  const menu=document.getElementById(id);
+  const wasOpen=menu.classList.contains('open');
+  closeAllMenus();
+  if(!wasOpen) menu.classList.add('open');
+}
+
+function closeAllMenus(){
+  document.querySelectorAll('.client-menu-dropdown.open').forEach(m=>m.classList.remove('open'));
+}
+
+// Close menus when clicking outside
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.client-menu-wrap')) closeAllMenus();
+});
+
+let _editClientId=null;
+function abrirEditCliente(id,name){
+  _editClientId=id;
+  // Reuse edit modal with just name field
+  document.getElementById("ep-name").value=name;
+  document.getElementById("ep-price").closest('.field').style.display='none';
+  document.getElementById("ep-cat").closest('.field').style.display='none';
+  document.getElementById("ep-stock").closest('.field').style.display='none';
+  document.getElementById("ep-img").closest('.field').style.display='none';
+  document.getElementById("edit-err").textContent='';
+  document.querySelector('.edit-modal h3').textContent='✏️ Editar cliente';
+  document.querySelector('.edit-modal-btns .btn-confirm').onclick=guardarEditCliente;
+  document.getElementById("edit-overlay").classList.add("open");
+  setTimeout(()=>document.getElementById("ep-name").focus(),100);
+}
+
+function guardarEditCliente(){
+  const name=document.getElementById("ep-name").value.trim();
+  const err=document.getElementById("edit-err");
+  const btn=document.querySelector(".edit-modal-btns .btn-confirm");
+  if(!name){err.textContent="El nombre no puede estar vacío";return;}
+  btn.disabled=true;btn.textContent="Guardando...";
+  db.collection("users").doc(_editClientId).update({name})
+    .then(()=>{
+      const idx=cachedUsers.findIndex(u=>u.id===_editClientId);
+      if(idx!==-1) cachedUsers[idx].name=name;
+      cerrarEditModal();
+      // Restore edit modal fields for products
+      ['ep-price','ep-cat','ep-stock','ep-img'].forEach(id=>{
+        document.getElementById(id).closest('.field').style.display='';
+      });
+      document.querySelector('.edit-modal h3').textContent='✏️ Editar producto';
+      document.querySelector('.edit-modal-btns .btn-confirm').onclick=guardarEdicion;
+      renderAdmin();
+      showToast("Nombre actualizado correctamente","success");
+    })
+    .catch(()=>{err.textContent="Error al guardar.";})
+    .finally(()=>{btn.disabled=false;btn.textContent="Guardar cambios";});
 }
 
 function deleteClient(id){
