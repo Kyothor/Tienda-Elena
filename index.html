@@ -970,9 +970,21 @@ function renderAdmin(){
   animateCount(document.getElementById("mc-ganancia"), totalDebt, '', '', true);
   setTimeout(initRipples,100);
   const cl=document.getElementById("admin-clients-list");
-  cl.innerHTML=clients.length===0?`<div class="empty">Sin clientes registrados</div>`:
+  // Sort for clients tab: pending debt desc → saldados/sin deuda alphabetically at end
+  const clientsForTab=[...clients].sort((a,b)=>{
+    const da=clientDebtOf(a.id,purchases), db=clientDebtOf(b.id,purchases);
+    const paA=viewPayments.filter(p=>p.userId===a.id).reduce((s,p)=>s+p.amount,0);
+    const paB=viewPayments.filter(p=>p.userId===b.id).reduce((s,p)=>s+p.amount,0);
+    const pendA=Math.max(0,da-paA), pendB=Math.max(0,db-paB);
+    // Fully paid or no debt → goes to end alphabetically
+    const aAtEnd=(da===0||pendA<=0), bAtEnd=(db===0||pendB<=0);
+    if(aAtEnd!==bAtEnd) return aAtEnd?1:-1;
+    if(!aAtEnd&&!bAtEnd&&pendA!==pendB) return pendB-pendA; // more pending first
+    return a.name.localeCompare(b.name,"es");
+  });
+  cl.innerHTML=clientsForTab.length===0?`<div class="empty">Sin clientes registrados</div>`:
     `<div class="clients-grid">`+
-    clients.map(c=>{
+    clientsForTab.map(c=>{
       const debt=clientDebtOf(c.id,purchases);
       const clientPayments=viewPayments.filter(p=>p.userId===c.id);
       const paidTotal=clientPayments.reduce((s,p)=>s+p.amount,0);
