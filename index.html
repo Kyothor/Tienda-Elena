@@ -314,8 +314,9 @@
   @keyframes spin{to{transform:rotate(360deg);}}
   .loading-text{font-size:14px;color:rgba(255,255,255,.8);font-weight:700;}
   .section-title{font-size:15px;font-weight:900;color:var(--dark);margin-bottom:16px;letter-spacing:-.2px;}
-  .client-block{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--gray-bg);}
-  .client-block:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+  .purchases-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start;}
+  .client-block{background:#fff;border:1px solid rgba(216,223,238,.7);border-radius:18px;padding:16px;box-shadow:var(--shadow-sm);transition:box-shadow .2s;}
+  .client-block:hover{box-shadow:var(--shadow-md);}
   .client-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
   .agotado-banner{background:var(--danger);color:#fff;font-size:11px;font-weight:800;text-align:center;padding:5px;letter-spacing:.8px;}
   .search-box{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
@@ -538,6 +539,7 @@
     .btn-pagado{font-size:11px;padding:5px 10px;}
 
     /* Purchases per client indentation */
+    .purchases-grid{grid-template-columns:1fr;}
     .client-block div[style*="margin-left:46px"]{margin-left:0!important;width:100%!important;}
   }
 
@@ -661,7 +663,7 @@
       </div>
       <div class="card">
         <div class="section-title" id="compras-section-title">Compras del mes por cliente</div>
-        <div id="admin-purchases-list"></div>
+        <div id="admin-purchases-list" class="purchases-grid"></div>
       </div>
     </div>
 
