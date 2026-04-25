@@ -982,8 +982,13 @@ function renderAdmin(){
     }).join("")+"</tbody></table></div>";
   document.getElementById("add-client-card").style.display=isHist?"none":"block";
   const pl=document.getElementById("admin-purchases-list");
-  pl.innerHTML=clients.length===0?`<div class="empty">Sin clientes</div>`:
-    clients.map(c=>{
+  const clientsSorted=[...clients].sort((a,b)=>{
+    const da=clientDebtOf(a.id,purchases), db=clientDebtOf(b.id,purchases);
+    if(da!==db) return db-da; // más deuda primero
+    return a.name.localeCompare(b.name,"es"); // mismo monto → alfabético
+  });
+  pl.innerHTML=clientsSorted.length===0?`<div class="empty">Sin clientes</div>`:
+    clientsSorted.map(c=>{
       const allPurchases=purchases.filter(p=>p.userId===c.id);
       const clientPayments=viewPayments.filter(p=>p.userId===c.id).sort((a,b)=>a.paidAt>b.paidAt?1:-1);
       const debt=clientDebtOf(c.id,purchases);
