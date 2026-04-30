@@ -723,7 +723,8 @@
           <div class="field"><label>Nombre</label><input id="np-name" type="text" placeholder="Ej: Leche entera"/></div>
           <div class="field"><label>Precio ($)</label><input id="np-price" type="number" placeholder="0" min="0"/></div>
           <div class="field"><label>Categoría</label><input id="np-cat" type="text" placeholder="Ej: Lácteos"/></div>
-          <div class="field"><label>Stock</label><input id="np-stock" type="number" placeholder="0" min="0"/></div>
+          <div class="field"><label>Stock inicial</label><input id="np-stock" type="number" placeholder="0" min="0"/></div>
+          <div class="field"><label>Almacén inicial</label><input id="np-almacen" type="number" placeholder="0" min="0"/></div>
         </div>
         <div class="form-row" style="margin-top:10px;">
           <div class="field" style="flex:3;"><label>URL de imagen (opcional)</label><input id="np-img" type="url" placeholder="https://i.imgur.com/ejemplo.jpg"/></div>
@@ -1129,18 +1130,36 @@ function renderAdmin(){
     }).join("");
   const pt=document.getElementById("admin-products-list");
   pt.innerHTML=cachedProducts.length===0?`<div class="empty">Sin productos</div>`:
-    `<div class="table-wrap"><table><thead><tr><th>Imagen</th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Stock</th><th></th></tr></thead><tbody>`+
+    `<div class="table-wrap"><table><thead><tr><th>Imagen</th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Almacén</th><th>Mover al stock</th><th></th></tr></thead><tbody>`+
     cachedProducts.map(p=>{const sb=p.stock<=0?"badge-red":p.stock<=3?"badge-amber":"badge-green";
       return `<tr><td>${p.img?`<img src="${p.img}" style="width:44px;height:44px;object-fit:cover;border-radius:10px;border:1px solid var(--gray-border);" onerror="this.style.display='none'"/>`:
         `<div style="width:44px;height:44px;border-radius:10px;background:var(--blue-pale);display:flex;align-items:center;justify-content:center;font-size:20px;">🛒</div>`
       }</td><td style="font-weight:700;">${p.name}</td><td style="color:var(--gray-muted);">${p.cat}</td><td style="color:var(--blue);font-weight:800;">${fmt(p.price)}</td>
-      <td><span class="badge ${sb}">${p.stock!==undefined?p.stock:"–"}</span></td>
-      <td><div style="display:flex;align-items:center;gap:4px;">
-        <input type="number" id="adj-${p.id}" value="${p.stock||0}" min="0"
-          style="width:65px;padding:5px 8px;font-size:13px;font-weight:700;border:1.5px solid var(--gray-border);border-radius:8px;background:var(--gray-bg);color:var(--gray-text);outline:none;font-family:'Nunito',sans-serif;text-align:center;"
-          onchange="setStock('${p.id}',this.value)"
-          onblur="setStock('${p.id}',this.value)"/>
-      </div></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="badge ${sb}">${p.stock!==undefined?p.stock:"–"}</span>
+          <input type="number" id="stk-${p.id}" value="${p.stock||0}" min="0"
+            style="width:55px;padding:4px 6px;font-size:12px;font-weight:700;border:1.5px solid var(--gray-border);border-radius:8px;background:var(--gray-bg);color:var(--gray-text);outline:none;font-family:'Nunito',sans-serif;text-align:center;"
+            onchange="setStockDirect('${p.id}',this.value)"
+            onblur="setStockDirect('${p.id}',this.value)"/>
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="badge ${(p.almacen||0)<=0?'badge-red':(p.almacen||0)<=5?'badge-amber':'badge-green'}">${p.almacen!==undefined?p.almacen:0}</span>
+          <input type="number" id="alm-${p.id}" value="${p.almacen||0}" min="0"
+            style="width:55px;padding:4px 6px;font-size:12px;font-weight:700;border:1.5px solid var(--gray-border);border-radius:8px;background:var(--gray-bg);color:var(--gray-text);outline:none;font-family:'Nunito',sans-serif;text-align:center;"
+            onchange="setAlmacen('${p.id}',this.value)"
+            onblur="setAlmacen('${p.id}',this.value)"/>
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <input type="number" id="mover-${p.id}" placeholder="0" min="1" max="${p.almacen||0}"
+            style="width:52px;padding:4px 6px;font-size:12px;font-weight:700;border:1.5px solid var(--gray-border);border-radius:8px;background:var(--gray-bg);color:var(--gray-text);outline:none;font-family:'Nunito',sans-serif;text-align:center;"/>
+          <button class="btn-pagado" style="padding:4px 10px;font-size:11px;" onclick="moverAlStock('${p.id}')">→ Stock</button>
+        </div>
+      </td>
       <td style="display:flex;gap:6px;align-items:center;">
         <button class="btn-edit" onclick="abrirEditModal('${p.id}')">Editar</button>
         <button class="btn-danger" onclick="deleteProduct('${p.id}')">Eliminar</button>
@@ -1354,11 +1373,12 @@ function abrirEditModal(productId){
   const p = getProduct(productId);
   if(!p) return;
   _editProductId = productId;
-  document.getElementById("ep-name").value  = p.name  || "";
-  document.getElementById("ep-price").value = p.price || "";
-  document.getElementById("ep-cat").value   = p.cat   || "";
-  document.getElementById("ep-stock").value = p.stock !== undefined ? p.stock : "";
-  document.getElementById("ep-img").value   = p.img   || "";
+  document.getElementById("ep-name").value    = p.name  || "";
+  document.getElementById("ep-price").value   = p.price || "";
+  document.getElementById("ep-cat").value     = p.cat   || "";
+  document.getElementById("ep-stock").value   = p.stock !== undefined ? p.stock : "";
+  document.getElementById("ep-almacen").value = p.almacen !== undefined ? p.almacen : "";
+  document.getElementById("ep-img").value     = p.img   || "";
   document.getElementById("edit-err").textContent = "";
   document.getElementById("edit-overlay").classList.add("open");
   setTimeout(()=>document.getElementById("ep-name").focus(), 100);
@@ -1387,7 +1407,8 @@ function guardarEdicion(){
   // Only update mutable fields — price change only applies going forward.
   // Past purchases already recorded price*qty at moment of purchase, so
   // changing price here does NOT affect historical records in Firestore.
-  const updates = {name, price, cat, stock};
+  const almacen = parseInt(document.getElementById("ep-almacen").value)||0;
+  const updates = {name, price, cat, stock, almacen};
   if(img) updates.img = img; else updates.img = "";
 
   btn.disabled = true; btn.textContent = "Guardando...";
@@ -1406,18 +1427,54 @@ showToast("Producto actualizado — el historial anterior no se modifica","succe
     .finally(()=>{ btn.disabled = false; btn.textContent = "Guardar cambios"; });
 }
 
-function adjustStock(productId){setStock(productId,document.getElementById("adj-"+productId).value);}
-function setStock(productId,val){
+function adjustStock(productId){setStockDirect(productId,document.getElementById("stk-"+productId)?.value||0);}
+function setStock(productId,val){setStockDirect(productId,val);}
+
+function setStockDirect(productId,val){
   const ns=Math.max(0,parseInt(val)||0);
   const pr=getProduct(productId);
   if(!pr||pr.stock===ns)return;
   db.collection("products").doc(productId).update({stock:ns}).then(()=>{
     const idx=cachedProducts.findIndex(p=>p.id===productId);
     if(idx!==-1)cachedProducts[idx].stock=ns;
-    // Update input to show confirmed value without full re-render
-    const input=document.getElementById("adj-"+productId);
+    const input=document.getElementById("stk-"+productId);
     if(input) input.value=ns;
     showToast("Stock de "+pr.name+" actualizado a "+ns,"success");
+  });
+}
+
+function setAlmacen(productId,val){
+  const na=Math.max(0,parseInt(val)||0);
+  const pr=getProduct(productId);
+  if(!pr||pr.almacen===na)return;
+  db.collection("products").doc(productId).update({almacen:na}).then(()=>{
+    const idx=cachedProducts.findIndex(p=>p.id===productId);
+    if(idx!==-1)cachedProducts[idx].almacen=na;
+    const input=document.getElementById("alm-"+productId);
+    if(input) input.value=na;
+    showToast("Almacén de "+pr.name+" actualizado a "+na,"success");
+  });
+}
+
+function moverAlStock(productId){
+  const pr=getProduct(productId);
+  if(!pr)return;
+  const input=document.getElementById("mover-"+productId);
+  const cantidad=Math.max(0,parseInt(input.value)||0);
+  if(cantidad<=0){showToast("Ingresa una cantidad a mover","error");return;}
+  const almacenActual=pr.almacen||0;
+  if(cantidad>almacenActual){
+    showToast("No hay suficiente en almacén ("+almacenActual+" disponibles)","error");
+    return;
+  }
+  const nuevoStock=( pr.stock||0)+cantidad;
+  const nuevoAlmacen=almacenActual-cantidad;
+  db.collection("products").doc(productId).update({stock:nuevoStock,almacen:nuevoAlmacen}).then(()=>{
+    const idx=cachedProducts.findIndex(p=>p.id===productId);
+    if(idx!==-1){cachedProducts[idx].stock=nuevoStock;cachedProducts[idx].almacen=nuevoAlmacen;}
+    input.value="";
+    showToast(cantidad+" unidades de "+pr.name+" movidas al stock ✓","success");
+    renderAdmin();
   });
 }
 function addClient(){
@@ -1567,6 +1624,7 @@ function abrirEditCliente(id,name){
   document.getElementById("ep-price").closest('.field').style.display='none';
   document.getElementById("ep-cat").closest('.field').style.display='none';
   document.getElementById("ep-stock").closest('.field').style.display='none';
+  document.getElementById("ep-almacen").closest('.field').style.display='none';
   document.getElementById("ep-img").closest('.field').style.display='none';
   document.getElementById("edit-err").textContent='';
   document.querySelector('.edit-modal h3').textContent='✏️ Editar cliente';
@@ -1587,7 +1645,7 @@ function guardarEditCliente(){
       if(idx!==-1) cachedUsers[idx].name=name;
       cerrarEditModal();
       // Restore edit modal fields for products
-      ['ep-price','ep-cat','ep-stock','ep-img'].forEach(id=>{
+      ['ep-price','ep-cat','ep-stock','ep-almacen','ep-img'].forEach(id=>{
         document.getElementById(id).closest('.field').style.display='';
       });
       document.querySelector('.edit-modal h3').textContent='✏️ Editar producto';
@@ -1646,6 +1704,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Enter"&&document.getElementB
     <div class="field"><label>Precio ($)</label><input id="ep-price" type="number" min="0"/></div>
     <div class="field"><label>Categoría</label><input id="ep-cat" type="text"/></div>
     <div class="field"><label>Stock</label><input id="ep-stock" type="number" min="0"/></div>
+    <div class="field"><label>Almacén</label><input id="ep-almacen" type="number" min="0"/></div>
     <div class="field"><label>URL imagen (opcional)</label><input id="ep-img" type="url" placeholder="https://..."/></div>
     <div class="edit-err" id="edit-err"></div>
     <div class="edit-modal-btns">
